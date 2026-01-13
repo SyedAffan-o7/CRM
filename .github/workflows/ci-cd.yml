@@ -1,0 +1,83 @@
+name: Django CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install flake8 black pytest pytest-django
+
+    - name: Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Run Black formatter check
+      run: |
+        black --check --diff .
+
+    - name: Run tests
+      env:
+        DJANGO_SETTINGS_MODULE: crm_project.settings
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+      run: |
+        python manage.py migrate
+        python manage.py test
+
+    - name: Build Docker image
+      run: |
+        docker build -t aaa-crm:${{ github.sha }} .
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Deploy to production
+      run: |
+        echo "🚀 Deploying to production server..."
+        echo "This would typically include:"
+        echo "- Building Docker image"
+        echo "- Pushing to container registry"
+        echo "- Deploying to Kubernetes/VM"
+        echo "- Running database migrations"
+        echo "- Restarting services"
+        echo "✅ Deployment completed successfully!"

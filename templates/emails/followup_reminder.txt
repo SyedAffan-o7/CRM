@@ -1,0 +1,18 @@
+Subject: Follow-up Reminder: {{ followup.lead.contact_name }}
+
+Hi {{ followup.assigned_to.get_full_name }},
+
+You have a follow-up scheduled for {{ followup.scheduled_date|date:"M d, Y H:i" }} with {{ followup.lead.contact_name }}.
+
+Lead Details:
+- Contact: {{ followup.lead.contact_name }}
+- Company: {{ followup.lead.company_name }}
+- Phone: {{ followup.lead.phone_number }}
+
+Notes:
+{{ followup.notes }}
+
+View lead details: {{ settings.BASE_URL }}{% url 'crm_app:lead_detail' pk=followup.lead.id %}
+
+Regards,
+CRM System

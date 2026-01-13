@@ -1,0 +1,706 @@
+﻿[
+{
+  "model": "products.category",
+  "pk": 1,
+  "fields": {
+    "name": "sqwwqer",
+    "description": "asdsdasd",
+    "created_at": "2025-08-31T16:52:04.292Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.category",
+  "pk": 2,
+  "fields": {
+    "name": "Eye and face protection",
+    "description": "",
+    "created_at": "2025-09-01T05:38:28.131Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.category",
+  "pk": 3,
+  "fields": {
+    "name": "Ear Protection",
+    "description": "",
+    "created_at": "2025-09-01T05:38:50.915Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.category",
+  "pk": 4,
+  "fields": {
+    "name": "Head Protection",
+    "description": "",
+    "created_at": "2025-09-01T05:39:01.550Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.category",
+  "pk": 5,
+  "fields": {
+    "name": "Safety Gloves",
+    "description": "",
+    "created_at": "2025-09-01T05:39:24.128Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.category",
+  "pk": 6,
+  "fields": {
+    "name": "Safety Shoes",
+    "description": "",
+    "created_at": "2025-09-01T05:39:38.606Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.category",
+  "pk": 7,
+  "fields": {
+    "name": "Electronics",
+    "description": "Electronics products and services",
+    "created_at": "2025-09-01T13:19:15.148Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.category",
+  "pk": 8,
+  "fields": {
+    "name": "Home & Garden",
+    "description": "Home & Garden products and services",
+    "created_at": "2025-09-01T13:19:15.221Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.category",
+  "pk": 9,
+  "fields": {
+    "name": "Automotive",
+    "description": "Automotive products and services",
+    "created_at": "2025-09-01T13:19:15.289Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.category",
+  "pk": 10,
+  "fields": {
+    "name": "Fashion",
+    "description": "Fashion products and services",
+    "created_at": "2025-09-01T13:19:15.362Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 1,
+  "fields": {
+    "name": "SA",
+    "category": 1,
+    "description": "SADSAF",
+    "created_at": "2025-08-31T17:06:26.842Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 2,
+  "fields": {
+    "name": "Safety Goggles",
+    "category": 2,
+    "description": "",
+    "created_at": "2025-09-01T05:41:48.354Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 3,
+  "fields": {
+    "name": "Face Shield",
+    "category": 2,
+    "description": "",
+    "created_at": "2025-09-01T05:42:06.556Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 4,
+  "fields": {
+    "name": "Mask",
+    "category": 2,
+    "description": "",
+    "created_at": "2025-09-01T05:42:22.226Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 5,
+  "fields": {
+    "name": "Mask Filter",
+    "category": 2,
+    "description": "",
+    "created_at": "2025-09-01T05:42:38.301Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 6,
+  "fields": {
+    "name": "Welding Goggles",
+    "category": 2,
+    "description": "",
+    "created_at": "2025-09-01T05:43:02.505Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 7,
+  "fields": {
+    "name": "Ear Plugs and Muffs",
+    "category": 3,
+    "description": "",
+    "created_at": "2025-09-01T05:43:48.035Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 8,
+  "fields": {
+    "name": "Safety Helmets",
+    "category": 4,
+    "description": "",
+    "created_at": "2025-09-01T05:44:09.431Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 9,
+  "fields": {
+    "name": "Head Protection Accessories",
+    "category": 4,
+    "description": "",
+    "created_at": "2025-09-01T05:44:34.058Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 10,
+  "fields": {
+    "name": "Bump Cap",
+    "category": 4,
+    "description": "",
+    "created_at": "2025-09-01T05:44:51.660Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 11,
+  "fields": {
+    "name": "Welding Helmet",
+    "category": 4,
+    "description": "",
+    "created_at": "2025-09-01T05:45:05.508Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 12,
+  "fields": {
+    "name": "Head Lamps",
+    "category": 4,
+    "description": "",
+    "created_at": "2025-09-01T05:45:25.519Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 13,
+  "fields": {
+    "name": "Chemical Gloves",
+    "category": 5,
+    "description": "",
+    "created_at": "2025-09-01T05:45:56.752Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 14,
+  "fields": {
+    "name": "Disposable Gloves",
+    "category": 5,
+    "description": "",
+    "created_at": "2025-09-01T05:46:12.715Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 15,
+  "fields": {
+    "name": "Dotted Gloves",
+    "category": 5,
+    "description": "",
+    "created_at": "2025-09-01T05:46:34.251Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 16,
+  "fields": {
+    "name": "Lattex Gloves",
+    "category": 5,
+    "description": "",
+    "created_at": "2025-09-01T05:46:54.034Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 17,
+  "fields": {
+    "name": "PU Cotted Gloves",
+    "category": 5,
+    "description": "",
+    "created_at": "2025-09-01T05:47:15.922Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 18,
+  "fields": {
+    "name": "Leather Gloves",
+    "category": 5,
+    "description": "",
+    "created_at": "2025-09-01T05:47:31.120Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 19,
+  "fields": {
+    "name": "Welding Gloves",
+    "category": 5,
+    "description": "",
+    "created_at": "2025-09-01T05:47:46.998Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 20,
+  "fields": {
+    "name": "Guboots",
+    "category": 6,
+    "description": "",
+    "created_at": "2025-09-01T05:48:07.944Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 21,
+  "fields": {
+    "name": "Foot Accessories",
+    "category": 6,
+    "description": "",
+    "created_at": "2025-09-01T05:48:26.659Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 22,
+  "fields": {
+    "name": "Mobile Phones",
+    "category": 7,
+    "description": "Mobile Phones in Electronics",
+    "created_at": "2025-09-01T13:19:15.163Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 23,
+  "fields": {
+    "name": "Laptops",
+    "category": 7,
+    "description": "Laptops in Electronics",
+    "created_at": "2025-09-01T13:19:15.175Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 24,
+  "fields": {
+    "name": "Tablets",
+    "category": 7,
+    "description": "Tablets in Electronics",
+    "created_at": "2025-09-01T13:19:15.187Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 25,
+  "fields": {
+    "name": "Cameras",
+    "category": 7,
+    "description": "Cameras in Electronics",
+    "created_at": "2025-09-01T13:19:15.198Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 26,
+  "fields": {
+    "name": "Audio Equipment",
+    "category": 7,
+    "description": "Audio Equipment in Electronics",
+    "created_at": "2025-09-01T13:19:15.209Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 27,
+  "fields": {
+    "name": "Furniture",
+    "category": 8,
+    "description": "Furniture in Home & Garden",
+    "created_at": "2025-09-01T13:19:15.233Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 28,
+  "fields": {
+    "name": "Kitchen Appliances",
+    "category": 8,
+    "description": "Kitchen Appliances in Home & Garden",
+    "created_at": "2025-09-01T13:19:15.244Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 29,
+  "fields": {
+    "name": "Garden Tools",
+    "category": 8,
+    "description": "Garden Tools in Home & Garden",
+    "created_at": "2025-09-01T13:19:15.256Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 30,
+  "fields": {
+    "name": "Home Decor",
+    "category": 8,
+    "description": "Home Decor in Home & Garden",
+    "created_at": "2025-09-01T13:19:15.268Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 31,
+  "fields": {
+    "name": "Lighting",
+    "category": 8,
+    "description": "Lighting in Home & Garden",
+    "created_at": "2025-09-01T13:19:15.279Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 32,
+  "fields": {
+    "name": "Car Parts",
+    "category": 9,
+    "description": "Car Parts in Automotive",
+    "created_at": "2025-09-01T13:19:15.301Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 33,
+  "fields": {
+    "name": "Motorcycles",
+    "category": 9,
+    "description": "Motorcycles in Automotive",
+    "created_at": "2025-09-01T13:19:15.313Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 34,
+  "fields": {
+    "name": "Car Accessories",
+    "category": 9,
+    "description": "Car Accessories in Automotive",
+    "created_at": "2025-09-01T13:19:15.328Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 35,
+  "fields": {
+    "name": "Tires",
+    "category": 9,
+    "description": "Tires in Automotive",
+    "created_at": "2025-09-01T13:19:15.340Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 36,
+  "fields": {
+    "name": "Car Care",
+    "category": 9,
+    "description": "Car Care in Automotive",
+    "created_at": "2025-09-01T13:19:15.351Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": true
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 37,
+  "fields": {
+    "name": "Men's Clothing",
+    "category": 10,
+    "description": "Men's Clothing in Fashion",
+    "created_at": "2025-09-01T13:19:15.373Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 38,
+  "fields": {
+    "name": "Women's Clothing",
+    "category": 10,
+    "description": "Women's Clothing in Fashion",
+    "created_at": "2025-09-01T13:19:15.385Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 39,
+  "fields": {
+    "name": "Shoes",
+    "category": 10,
+    "description": "Shoes in Fashion",
+    "created_at": "2025-09-01T13:19:15.397Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 40,
+  "fields": {
+    "name": "Accessories",
+    "category": 10,
+    "description": "Accessories in Fashion",
+    "created_at": "2025-09-01T13:19:15.408Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+},
+{
+  "model": "products.subcategory",
+  "pk": 41,
+  "fields": {
+    "name": "Jewelry",
+    "category": 10,
+    "description": "Jewelry in Fashion",
+    "created_at": "2025-09-01T13:19:15.419Z",
+    "created_by": [
+      "hp"
+    ],
+    "is_active": false
+  }
+}
+]

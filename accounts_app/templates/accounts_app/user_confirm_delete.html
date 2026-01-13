@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - CRM System{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'accounts_app:user_management' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Back to Users
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> Confirm User Deletion
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Danger Warning -->
+                <div class="alert alert-danger">
+                    <h5 class="alert-heading">
+                        <i class="bi bi-exclamation-octagon"></i> DANGER: This action cannot be undone!
+                    </h5>
+                    <p class="mb-0">
+                        You are about to permanently delete this user. All associated data may be affected.
+                    </p>
+                </div>
+
+                <!-- User Information -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="card-title mb-0">User to be Deleted:</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <td class="fw-bold" width="40%">Username:</td>
+                                        <td>{{ user_to_delete.username }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Full Name:</td>
+                                        <td>{{ user_to_delete.get_full_name|default:"Not provided" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Email:</td>
+                                        <td>{{ user_to_delete.email }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Status:</td>
+                                        <td>
+                                            {% if user_to_delete.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <td class="fw-bold" width="40%">Role:</td>
+                                        <td>
+                                            {% if user_to_delete.profile.role %}
+                                                {{ user_to_delete.profile.role.display_name }}
+                                            {% else %}
+                                                <span class="text-muted">No role</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Employee ID:</td>
+                                        <td>{{ user_to_delete.profile.employee_id|default:"Not provided" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Department:</td>
+                                        <td>{{ user_to_delete.profile.department|default:"Not provided" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Date Joined:</td>
+                                        <td>{{ user_to_delete.date_joined|date:"M d, Y" }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- What will be deleted -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-info-circle"></i> What will be deleted:
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0">
+                            <li>User account and login credentials</li>
+                            <li>User profile and role assignment</li>
+                            <li>All associated permissions</li>
+                            <li class="text-muted">Note: Activities, leads, and other records created by this user will be preserved but will show as "deleted user"</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Confirmation Form -->
+                <form method="post" id="deleteForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="confirmUsername" class="form-label fw-bold">
+                            Type the username "<span class="text-danger">{{ user_to_delete.username }}</span>" to confirm deletion:
+                        </label>
+                        <input type="text" 
+                               class="form-control form-control-lg" 
+                               id="confirmUsername" 
+                               placeholder="Type username here"
+                               required>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" 
+                                class="btn btn-danger btn-lg" 
+                                id="deleteButton"
+                                disabled>
+                            <i class="bi bi-trash"></i> Yes, Permanently Delete This User
+                        </button>
+                        <a href="{% url 'accounts_app:user_management' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> No, Cancel and Go Back
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Alternative Suggestion -->
+        <div class="card mt-3 border-info">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="bi bi-lightbulb"></i> Consider deactivating instead?
+                </h6>
+                <p class="mb-2">
+                    If you want to preserve all data but prevent login, consider 
+                    <strong>deactivating</strong> the user instead of deleting.
+                </p>
+                <form method="post" action="{% url 'accounts_app:toggle_user_status' user_to_delete.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-info">
+                        <i class="bi bi-person-x"></i> Deactivate User Instead
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmInput = document.getElementById('confirmUsername');
+    const deleteButton = document.getElementById('deleteButton');
+    const expectedUsername = '{{ user_to_delete.username }}';
+    const deleteForm = document.getElementById('deleteForm');
+
+    confirmInput.addEventListener('input', function() {
+        if (this.value === expectedUsername) {
+            deleteButton.disabled = false;
+            deleteButton.classList.remove('btn-secondary');
+            deleteButton.classList.add('btn-danger');
+        } else {
+            deleteButton.disabled = true;
+            deleteButton.classList.remove('btn-danger');
+            deleteButton.classList.add('btn-secondary');
+        }
+    });
+
+    deleteForm.addEventListener('submit', function(e) {
+        if (confirmInput.value !== expectedUsername) {
+            e.preventDefault();
+            alert('Username does not match. Please type the exact username to confirm deletion.');
+            return false;
+        }
+
+        const confirmed = confirm(
+            'FINAL WARNING: Are you absolutely sure you want to delete user "' + expectedUsername + '"?\n\n' +
+            'This action CANNOT be undone!'
+        );
+
+        if (!confirmed) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

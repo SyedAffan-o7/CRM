@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notification Detail - {{ notification.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">{{ notification.title }}</h2>
+                    <p class="text-muted mb-0">
+                        {% if notification.notification_type.category == 'FOLLOW_UP' %}
+                            <span class="badge bg-info">Follow-up</span>
+                        {% elif notification.notification_type.category == 'WORKFLOW' %}
+                            <span class="badge bg-success">Workflow</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ notification.notification_type.category }}</span>
+                        {% endif %}
+                        • {{ notification.created_at|date:"M d, Y \a\t g:i A" }}
+                    </p>
+                </div>
+                <div>
+                    {% if notification.status == 'unread' %}
+                        <span class="badge bg-primary">Unread</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Read</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5>Message</h5>
+                            <p class="lead">{{ notification.message|default:"No message content" }}</p>
+
+                            {% if notification.content_object %}
+                                <h5>Related To</h5>
+                                <p>
+                                    {% if notification.content_type.model == 'followup' %}
+                                        <strong>Follow-up</strong> for lead:
+                                        <a href="{% url 'lead_detail' notification.content_object.lead.id %}" class="text-decoration-none">
+                                            {{ notification.content_object.lead.contact_name }}
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">
+                                            Scheduled: {{ notification.content_object.scheduled_date|date:"M d, Y g:i A" }}
+                                            {% if notification.content_object.notes %}
+                                                • {{ notification.content_object.notes|truncatechars:50 }}
+                                            {% endif %}
+                                        </small>
+                                    {% elif notification.content_type.model == 'lead' %}
+                                        <strong>Lead:</strong>
+                                        <a href="{% url 'lead_detail' notification.content_object.id %}" class="text-decoration-none">
+                                            {{ notification.content_object.contact_name }}
+                                        </a>
+                                    {% else %}
+                                        {{ notification.content_type.model|title }}: {{ notification.content_object }}
+                                    {% endif %}
+                                </p>
+                            {% endif %}
+
+                            {% if notification.data %}
+                                <h5>Additional Information</h5>
+                                <div class="bg-light p-3 rounded">
+                                    <pre class="mb-0"><small>{{ notification.data|json_script:"notification_data" }}</small></pre>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <h5>Actions</h5>
+                            <div class="d-grid gap-2">
+                                {% if notification.content_object and notification.content_type.model == 'followup' %}
+                                    <a href="{% url 'lead_detail' notification.content_object.lead.id %}"
+                                       class="btn btn-primary">
+                                        <i class="fas fa-eye me-2"></i>View Lead
+                                    </a>
+                                    <a href="{% url 'followup_edit' notification.content_object.id %}"
+                                       class="btn btn-outline-primary">
+                                        <i class="fas fa-edit me-2"></i>Edit Follow-up
+                                    </a>
+                                {% endif %}
+
+                                {% if notification.status == 'unread' %}
+                                    <form method="post" action="{% url 'notifications_app:mark_notification_read' notification.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="fas fa-check me-2"></i>Mark as Read
+                                        </button>
+                                    </form>
+                                {% endif %}
+
+                                <form method="post" action="{% url 'notifications_app:delete_notification' notification.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-danger w-100"
+                                            onclick="return confirm('Are you sure you want to delete this notification?')">
+                                        <i class="fas fa-trash me-2"></i>Delete
+                                    </button>
+{{ ... }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <a href="{% url 'notifications_app:notification_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Notifications
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-mark notification as read when viewed
+document.addEventListener('DOMContentLoaded', function() {
+    {% if notification.status == 'unread' %}
+        fetch('{% url "notifications_app:mark_notification_read" notification.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'read=true'
+        }).catch(console.error);
+    {% endif %}
+});
+</script>
+{% endblock %}

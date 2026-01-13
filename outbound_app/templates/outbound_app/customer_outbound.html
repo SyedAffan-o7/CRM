@@ -1,0 +1,371 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ contact.full_name }} - 360° Customer View{% endblock %}
+{% block page_title %}360° Customer View{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+  <a href="{% url 'outbound_app:outbound_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Back to List
+  </a>
+  <button class="btn btn-success" data-action="comm" data-method="PHONE"
+          data-contact-id="{{ contact.pk }}" data-contact-name="{{ contact.full_name }}"
+          data-phone="{{ contact.phone_number }}" data-whatsapp="{{ contact.whatsapp_number }}" data-email="{{ contact.email }}">
+    <i class="bi bi-whatsapp"></i> Quick Call
+  </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Header Section with Customer Name and Status -->
+<div class="container-fluid py-3">
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <div>
+          <h1 class="display-6 mb-1">{{ contact.full_name }}</h1>
+          <p class="text-muted mb-0">
+            {% if contact.company %}{{ contact.company.company_name }}{% else %}Individual Customer{% endif %}
+          </p>
+        </div>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          <!-- Status Badges -->
+          <div class="d-flex gap-2">
+            {% if contact.outbound_status == 'CONVERTED' %}
+              <span class="badge bg-success fs-6">🟢 Converted</span>
+            {% elif contact.outbound_status == 'CONTACTED' %}
+              <span class="badge bg-primary fs-6">🔵 Active</span>
+            {% else %}
+              <span class="badge bg-warning text-dark fs-6">🟡 Not Contacted</span>
+            {% endif %}
+            
+            <!-- Follow-up Due Badge -->
+            {% if overdue_follow_ups %}
+              <span class="badge bg-danger fs-6">🔴 Follow-up Due</span>
+            {% endif %}
+          </div>
+          
+          <!-- Quick Actions -->
+          <div class="btn-group">
+            <button class="btn btn-primary" data-action="comm" data-method="PHONE"
+                    data-contact-id="{{ contact.pk }}" data-contact-name="{{ contact.full_name }}"
+                    data-phone="{{ contact.phone_number }}" data-whatsapp="{{ contact.whatsapp_number }}" data-email="{{ contact.email }}">
+              📞 Call
+            </button>
+            <button class="btn btn-success" data-action="comm" data-method="WHATSAPP"
+                    data-contact-id="{{ contact.pk }}" data-contact-name="{{ contact.full_name }}"
+                    data-phone="{{ contact.phone_number }}" data-whatsapp="{{ contact.whatsapp_number }}" data-email="{{ contact.email }}">
+              💬 WhatsApp
+            </button>
+            <button class="btn btn-info" data-action="comm" data-method="EMAIL"
+                    data-contact-id="{{ contact.pk }}" data-contact-name="{{ contact.full_name }}"
+                    data-phone="{{ contact.phone_number }}" data-whatsapp="{{ contact.whatsapp_number }}" data-email="{{ contact.email }}">
+              ✉️ Email
+            </button>
+            <a href="{% url 'outbound_app:send_catalog' contact.pk %}" class="btn btn-outline-info">📂 Send Catalog</a>
+          </div>
+          
+          <!-- Highlighted New Enquiry Button -->
+          <a class="btn btn-cta btn-lg fw-bold" href="{% url 'crm_app:lead_add' %}?contact_id={{ contact.pk }}">
+            ➕ New Enquiry
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Customer Info + Quick Stats -->
+    <div class="col-lg-3">
+      <!-- Customer Info Card -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <h6 class="mb-0"><i class="bi bi-person-circle"></i> Customer Info</h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-2"><strong>Phone:</strong> {{ contact.phone_number }}</div>
+          <div class="mb-2"><strong>Email:</strong> {{ contact.email|default:'-' }}</div>
+          <div class="mb-2"><strong>WhatsApp:</strong> {{ contact.whatsapp_number|default:'-' }}</div>
+          <div class="mb-2"><strong>Company:</strong> {{ contact.company.company_name|default:'-' }}</div>
+          <div class="mb-2"><strong>Role:</strong> {{ contact.role_position|default:'-' }}</div>
+          <div class="mb-0"><strong>Added:</strong> {{ contact.created_date|date:'M d, Y' }}</div>
+        </div>
+      </div>
+
+      <!-- Quick Stats Card -->
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0"><i class="bi bi-graph-up"></i> Quick Stats</h6>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6 mb-3">
+              <div class="h4 text-primary mb-1">
+                {% if contact.last_contacted %}
+                  {{ contact.last_contacted|timesince|truncatewords:2 }}
+                {% else %}
+                  Never
+                {% endif %}
+              </div>
+              <small class="text-muted">Last Contacted</small>
+            </div>
+            <div class="col-6 mb-3">
+              <div class="h4 text-success mb-1">{{ activities|length }}</div>
+              <small class="text-muted">Total Interactions</small>
+            </div>
+            <div class="col-6">
+              <div class="h4 text-info mb-1">{{ related_leads|length }}</div>
+              <small class="text-muted">Enquiries</small>
+            </div>
+            <div class="col-6">
+              <div class="h4 text-warning mb-1">
+                {% if contact.created_by %}{{ contact.created_by.username }}{% else %}-{% endif %}
+              </div>
+              <small class="text-muted">Assigned To</small>
+            </div>
+          </div>
+          
+          <!-- Next Action Alert -->
+          {% if next_action %}
+            <div class="alert alert-warning mt-3 mb-0">
+              <i class="bi bi-clock"></i> <strong>Next:</strong> {{ next_action.get_next_step_display }}
+              <br><small>Due: {{ next_action.next_step_date|date:'M d, Y h:i A' }}</small>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Column: Activity Timeline -->
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">Activity Timeline</h6>
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'outbound_app:log_activity' contact.pk %}"><i class="bi bi-whatsapp"></i> Add Interaction</a>
+        </div>
+        <div class="card-body">
+          {% if activities %}
+          <ul class="list-group list-group-flush timeline">
+            {% for a in activities %}
+            <li class="list-group-item d-flex align-items-start timeline-item">
+              <div class="me-3">
+                {% if a.method == 'PHONE' %}
+                  <span class="badge rounded-pill bg-primary"><i class="bi bi-whatsapp"></i></span>
+                {% elif a.method == 'WHATSAPP' %}
+                  <span class="badge rounded-pill bg-success"><i class="bi bi-whatsapp"></i></span>
+                {% elif a.method == 'EMAIL' %}
+                  <span class="badge rounded-pill bg-info text-dark"><i class="bi bi-envelope-fill"></i></span>
+                {% elif a.method == 'MEETING' %}
+                  <span class="badge rounded-pill bg-secondary"><i class="bi bi-people-fill"></i></span>
+                {% else %}
+                  <span class="badge rounded-pill bg-dark"><i class="bi bi-chat-dots-fill"></i></span>
+                {% endif %}
+              </div>
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>{{ a.get_method_display }}</strong>
+                    <small class="text-muted">• {{ a.created_at|date:'M d, Y h:i A' }}</small>
+                  </div>
+                  <div>
+                    {% if a.next_step != 'NONE' %}
+                      <span class="badge bg-warning text-dark">{{ a.get_next_step_display }}</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="text-muted mt-1">{{ a.summary|default:'-' }}</div>
+                <div class="mt-2 d-flex gap-2 small">
+                  {% if a.next_step_date %}
+                    <span class="badge bg-light text-dark"><i class="bi bi-calendar-event"></i> {{ a.next_step_date|date:'M d, Y h:i A' }}</span>
+                  {% endif %}
+                  {% if a.follow_up_reminder %}
+                    <span class="badge bg-light text-dark"><i class="bi bi-bell"></i></span>
+                  {% endif %}
+                  <span class="badge bg-secondary"><i class="bi bi-person"></i> {{ a.created_by.username|default:'-' }}</span>
+                </div>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <div class="text-center text-muted py-3">
+            <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+            <p class="mt-2 mb-0">No interactions yet.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Related Enquiries -->
+    <div class="col-lg-3">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><i class="bi bi-list-check"></i> Related Enquiries</h6>
+          <a href="{% url 'crm_app:lead_add' %}?contact_id={{ contact.pk }}" class="btn btn-sm btn-success">
+            <i class="bi bi-plus"></i> New
+          </a>
+        </div>
+        <div class="card-body">
+          {% if related_leads %}
+            {% for lead in related_leads %}
+            <div class="border rounded p-2 mb-2">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                  <h6 class="mb-1">
+                    <a href="/enquiries/{{ lead.pk }}/" class="text-decoration-none">
+                      {{ lead.company_name|default:lead.contact_name }}
+                    </a>
+                  </h6>
+                  <small class="text-muted">{{ lead.created_date|date:'M d, Y' }}</small>
+                </div>
+                <span class="badge 
+                  {% if lead.enquiry_stage == 'won' %}bg-success
+                  {% elif lead.enquiry_stage == 'lost' %}bg-danger
+                  {% elif lead.enquiry_stage == 'negotiation' %}bg-warning text-dark
+                  {% elif lead.enquiry_stage == 'quotation_sent' %}bg-info
+                  {% else %}bg-secondary{% endif %}">
+                  {{ lead.get_enquiry_stage_display|truncatechars:12 }}
+                </span>
+              </div>
+              {% if lead.products_enquired.all %}
+                <div class="mt-1">
+                  <small class="text-muted">
+                    Products: {% for product in lead.products_enquired.all|slice:":2" %}{{ product.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    {% if lead.products_enquired.count > 2 %}...{% endif %}
+                  </small>
+                </div>
+              {% endif %}
+            </div>
+            {% endfor %}
+            
+            {% if related_leads|length > 5 %}
+              <div class="text-center mt-2">
+                <a href="/enquiries/?contact={{ contact.pk }}" class="btn btn-sm btn-outline-primary">
+                  View All ({{ related_leads|length }})
+                </a>
+              </div>
+            {% endif %}
+          {% else %}
+            <div class="text-center py-3">
+              <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
+              <p class="text-muted mt-2 mb-2">No enquiries yet</p>
+              <a href="{% url 'crm_app:lead_add' %}?contact_id={{ contact.pk }}" class="btn btn-sm btn-success">
+                <i class="bi bi-plus-circle"></i> Create First Enquiry
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Enhanced Mobile-Friendly Styles -->
+<style>
+@media (max-width: 768px) {
+  .display-6 { font-size: 1.5rem; }
+  .btn-group { flex-direction: column; width: 100%; }
+  .btn-group .btn { border-radius: 0.375rem !important; margin-bottom: 0.25rem; }
+  .d-flex.gap-3.flex-wrap { gap: 1rem !important; }
+  .col-lg-3, .col-lg-6 { margin-bottom: 1rem; }
+}
+
+.badge.fs-6 {
+  font-size: 0.875rem !important;
+  padding: 0.5rem 0.75rem;
+}
+
+.alert-warning {
+  border-left: 4px solid #ffc107;
+}
+</style>
+
+<!-- Shared Log Activity Modal from contact list page -->
+<div class="modal fade" id="logActivityModal" tabindex="-1" aria-labelledby="logActivityTitle" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="logActivityTitle">Log Activity</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-end mb-3">
+          <a id="openCommBtn" href="#" target="_blank" class="btn btn-outline-primary">
+            <i id="openCommIcon" class="bi bi-whatsapp me-1"></i> Open
+          </a>
+        </div>
+        <form id="logActivityForm" method="post" data-log-url="{% url 'outbound_app:log_activity' pk='0' %}">
+          {% csrf_token %}
+          <input type="hidden" name="contact" value="{{ contact.pk }}">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Method</label>
+              <select name="method" class="form-select" required>
+                <option value="PHONE">Phone Call</option>
+                <option value="WHATSAPP">WhatsApp</option>
+                <option value="EMAIL">Email</option>
+                <option value="SMS">SMS</option>
+                <option value="MEETING">In-Person Meeting</option>
+                <option value="VIDEO_CALL">Video Call</option>
+                <option value="LINKEDIN">LinkedIn Message</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Outcome</label>
+              <select name="outcome" class="form-select">
+                <option value="">-- Select --</option>
+                <option value="POSITIVE">Positive</option>
+                <option value="NEUTRAL">Neutral</option>
+                <option value="NEGATIVE">Negative</option>
+                <option value="NO_RESPONSE">No Response</option>
+                <option value="CALLBACK_REQUESTED">Callback Requested</option>
+                <option value="NOT_INTERESTED">Not Interested</option>
+                <option value="INTERESTED">Showed Interest</option>
+                <option value="MEETING_SCHEDULED">Meeting Scheduled</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Next Step</label>
+              <select name="next_step" class="form-select">
+                <option value="NONE">None</option>
+                <option value="FOLLOW_UP">Schedule Follow-up</option>
+                <option value="SEND_CATALOGUE">Send Product Catalogue</option>
+                <option value="SEND_QUOTE">Send Quotation</option>
+                <option value="SEND_PROPOSAL">Send Proposal</option>
+                <option value="SCHEDULE_DEMO">Schedule Product Demo</option>
+                <option value="SCHEDULE_MEETING">Schedule Meeting</option>
+                <option value="CREATE_ENQUIRY">Create Enquiry</option>
+                <option value="CONVERT_LEAD">Convert to Lead</option>
+                <option value="CLOSE_WON">Mark as Won</option>
+                <option value="CLOSE_LOST">Mark as Lost</option>
+              </select>
+            </div>
+            <div class="col-md-12">
+              <label class="form-label">Summary</label>
+              <textarea name="summary" class="form-control" rows="3" placeholder="Summary of conversation"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Next Step Date</label>
+              <input type="datetime-local" name="next_step_date" class="form-control" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Follow-up Reminder</label>
+              <input type="datetime-local" name="follow_up_reminder" class="form-control" />
+            </div>
+          </div>
+          <div class="mt-3 d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Activity</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/outbound.js' %}"></script>
+{% endblock %}

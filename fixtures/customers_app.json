@@ -1,0 +1,84 @@
+﻿[
+{
+  "model": "customers_app.contact",
+  "pk": 1,
+  "fields": {
+    "full_name": "affan",
+    "phone_number": "+9719607328578",
+    "whatsapp_number": "9607328578",
+    "email": null,
+    "company": null,
+    "role_position": "employee",
+    "address": "juna bazar",
+    "notes": "",
+    "created_by": null,
+    "created_date": "2025-08-31T06:52:46.924Z",
+    "updated_date": "2025-08-31T06:52:46.924Z",
+    "last_contacted": "2025-09-19T19:17:34.577Z",
+    "outbound_status": "CONVERTED",
+    "manual_status_override": false
+  }
+},
+{
+  "model": "customers_app.contact",
+  "pk": 2,
+  "fields": {
+    "full_name": "sad",
+    "phone_number": "+919607328578",
+    "whatsapp_number": "",
+    "email": null,
+    "company": null,
+    "role_position": "",
+    "address": "",
+    "notes": "Auto-created from enquiry on 2025-09-01",
+    "created_by": [
+      "hp"
+    ],
+    "created_date": "2025-09-01T07:03:39.335Z",
+    "updated_date": "2025-09-01T07:03:39.335Z",
+    "last_contacted": null,
+    "outbound_status": "NOT_CONTACTED",
+    "manual_status_override": false
+  }
+},
+{
+  "model": "customers_app.contact",
+  "pk": 3,
+  "fields": {
+    "full_name": "Unknown Contact",
+    "phone_number": "0000000000",
+    "whatsapp_number": "",
+    "email": null,
+    "company": null,
+    "role_position": "",
+    "address": "",
+    "notes": "",
+    "created_by": null,
+    "created_date": "2025-09-15T16:01:57.504Z",
+    "updated_date": "2025-09-15T16:01:57.504Z",
+    "last_contacted": null,
+    "outbound_status": "NOT_CONTACTED",
+    "manual_status_override": false
+  }
+},
+{
+  "model": "customers_app.contact",
+  "pk": 4,
+  "fields": {
+    "full_name": "QA Test Customer",
+    "phone_number": "9999999999",
+    "whatsapp_number": "9999999999",
+    "email": null,
+    "company": null,
+    "role_position": "",
+    "address": "",
+    "notes": "",
+    "created_by": null,
+    "created_date": "2025-09-15T16:50:39.312Z",
+    "updated_date": "2025-09-15T16:50:39.312Z",
+    "last_contacted": "2025-09-15T17:34:48.340Z",
+    "outbound_status": "CONTACTED",
+    "manual_status_override": false
+  }
+}
+]

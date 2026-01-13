@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - CRM System{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRoleModal">
+        <i class="bi bi-plus-circle"></i> Create Role
+    </button>
+    <a href="{% url 'accounts_app:user_management' %}" class="btn btn-outline-info">
+        <i class="bi bi-people"></i> User Management
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Roles Overview -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">User Roles</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Role</th>
+                                <th>Description</th>
+                                <th>Level</th>
+                                <th>Status</th>
+                                <th>Users</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for role in roles %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="badge bg-{{ role.role_level|add:'100'|floatformat:'0' }} text-white me-2">
+                                            {{ role.role_level }}
+                                        </div>
+                                        <strong>{{ role.display_name }}</strong>
+                                        {% if role.name == 'SUPERUSER' %}
+                                            <i class="bi bi-star-fill text-warning ms-1" title="System Role"></i>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ role.description|default:"No description" }}</td>
+                                <td>
+                                    <span class="badge bg-{{ role.role_level|add:'100'|floatformat:'0' }}">
+                                        Level {{ role.role_level }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if role.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% with user_count=role.role_level|add:0 %}
+                                        {% if role.name == 'SUPERUSER' %}
+                                            {{ roles|length }}
+                                        {% else %}
+                                            {{ role.role_level }}
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>{{ role.created_at|date:'M d, Y' }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-primary edit-role-btn"
+                                                data-role-id="{{ role.id }}"
+                                                data-role-name="{{ role.name|escapejs }}"
+                                                data-role-display="{{ role.display_name|escapejs }}"
+                                                data-role-desc="{{ role.description|escapejs|default:'No description' }}"
+                                                data-role-level="{{ role.role_level }}"
+                                                data-role-active="{{ role.is_active|lower }}">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        {% if role.name != 'SUPERUSER' %}
+                                        <form method="post" action="{% url 'accounts_app:delete_role' role.id %}"
+                                              class="d-inline"
+                                              onsubmit="return confirm('Are you sure you want to delete the {{ role.display_name }} role?')">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Role Permissions Matrix -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Role Permissions Matrix</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Module</th>
+                                {% for role in roles %}
+                                <th class="text-center">
+                                    {{ role.display_name }}
+                                    <br>
+                                    <small class="text-muted">Level {{ role.role_level }}</small>
+                                </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for permission in permissions|slice:":10" %}
+                            <tr>
+                                <td><strong>{{ permission.get_module_display }}</strong></td>
+                                {% for role in roles %}
+                                <td class="text-center">
+                                    <div class="permission-indicators">
+                                        {% with role_permissions=role.permissions.all %}
+                                        {% for role_perm in role_permissions %}
+                                        {% if role_perm.module == permission.module %}
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <span class="permission-dot {{ role_perm.can_view|yesno:'bg-success,bg-secondary' }}" title="View"></span>
+                                            <span class="permission-dot {{ role_perm.can_create|yesno:'bg-primary,bg-secondary' }}" title="Create"></span>
+                                            <span class="permission-dot {{ role_perm.can_edit|yesno:'bg-info,bg-secondary' }}" title="Edit"></span>
+                                            <span class="permission-dot {{ role_perm.can_delete|yesno:'bg-danger,bg-secondary' }}" title="Delete"></span>
+                                            <span class="permission-dot {{ role_perm.can_import|yesno:'bg-warning,bg-secondary' }}" title="Import"></span>
+                                            <span class="permission-dot {{ role_perm.can_export|yesno:'bg-purple,bg-secondary' }}" title="Export"></span>
+                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
+                                        {% endwith %}
+                                    </div>
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Role Modal -->
+<div class="modal fade" id="createRoleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="role_id" id="roleId" value="">
+
+                    <div class="mb-3">
+                        <label for="roleName" class="form-label">Role Name *</label>
+                        <input type="text" class="form-control" id="roleName" name="name" required>
+                        <div class="form-text">Internal name (e.g., SALESPERSON)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="roleDisplayName" class="form-label">Display Name *</label>
+                        <input type="text" class="form-control" id="roleDisplayName" name="display_name" required>
+                        <div class="form-text">User-friendly name (e.g., Salesperson)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="roleDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="roleDescription" name="description" rows="3"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="roleLevel" class="form-label">Role Level *</label>
+                            <input type="number" class="form-control" id="roleLevel" name="role_level" min="0" max="100" required>
+                            <div class="form-text">Higher number = more permissions</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <div class="form-check mt-2">
+                                <input type="checkbox" class="form-check-input" id="roleActive" name="is_active" checked>
+                                <label for="roleActive" class="form-check-label">Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.permission-indicators {
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.permission-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 0 1px;
+}
+
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+
+.permission-dot.bg-secondary {
+    opacity: 0.3;
+}
+</style>
+
+<script>
+function editRole(roleId, name, displayName, description, roleLevel, isActive) {
+    document.getElementById('roleId').value = roleId;
+    document.getElementById('roleName').value = name;
+    document.getElementById('roleDisplayName').value = displayName;
+    document.getElementById('roleDescription').value = description;
+    document.getElementById('roleLevel').value = roleLevel;
+    document.getElementById('roleActive').checked = isActive;
+
+    // Update modal title
+    document.querySelector('#createRoleModal .modal-title').textContent = 'Edit Role';
+
+    // Show modal
+    new bootstrap.Modal(document.getElementById('createRoleModal')).show();
+}
+
+// Handle edit role buttons using data attributes
+document.addEventListener('DOMContentLoaded', function() {
+    const editButtons = document.querySelectorAll('.edit-role-btn');
+    editButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const roleId = this.getAttribute('data-role-id');
+            const roleName = this.getAttribute('data-role-name');
+            const roleDisplay = this.getAttribute('data-role-display');
+            const roleDesc = this.getAttribute('data-role-desc');
+            const roleLevel = this.getAttribute('data-role-level');
+            const roleActive = this.getAttribute('data-role-active') === 'true';
+
+            editRole(roleId, roleName, roleDisplay, roleDesc, roleLevel, roleActive);
+        });
+    });
+});
+
+// Reset modal when closed
+document.getElementById('createRoleModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('roleId').value = '';
+    document.querySelector('#createRoleModal .modal-title').textContent = 'Create New Role';
+    document.getElementById('createRoleModal').reset();
+});
+</script>
+{% endblock %}

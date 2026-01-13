@@ -1,0 +1,60 @@
+{% extends "notifications_app/emails/base_email.html" %}
+
+{% block title %}New Lead - AAA CRM{% endblock %}
+
+{% block header_subtitle %}New Lead Notification{% endblock %}
+
+{% block content %}
+<div class="priority-high">
+    <h2>🎯 New Lead Received</h2>
+    <p>Hello {{ recipient.get_full_name|default:recipient.username }},</p>
+    
+    <p>A new enquiry has been received and {% if content_object.assigned_sales_person == recipient %}assigned to you{% else %}added to the system{% endif %}:</p>
+    
+    <div class="details">
+        <strong>Contact Name:</strong> {{ content_object.contact_name }}<br>
+        {% if content_object.company_name %}
+        <strong>Company:</strong> {{ content_object.company_name }}<br>
+        {% endif %}
+        <strong>Phone:</strong> {{ content_object.phone_number }}<br>
+        {% if content_object.country %}
+        <strong>Country:</strong> {{ content_object.country }}<br>
+        {% endif %}
+        <strong>Stage:</strong> {{ content_object.get_enquiry_stage_display }}<br>
+        <strong>Priority:</strong> {{ content_object.get_priority_display }}<br>
+        {% if content_object.assigned_sales_person %}
+        <strong>Assigned To:</strong> {{ content_object.assigned_sales_person.get_full_name|default:content_object.assigned_sales_person.username }}<br>
+        {% endif %}
+        <strong>Created By:</strong> {{ data.created_by|default:"System" }}<br>
+        <strong>Created:</strong> {{ content_object.created_date|date:"F d, Y at g:i A" }}<br>
+    </div>
+    
+    {% if content_object.products_enquired.all %}
+    <p><strong>Products of Interest:</strong></p>
+    <ul>
+        {% for product in content_object.products_enquired.all %}
+        <li>{{ product.name }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    
+    {% if content_object.notes %}
+    <div class="details">
+        <strong>Notes:</strong><br>
+        {{ content_object.notes }}
+    </div>
+    {% endif %}
+    
+    {% if content_object.assigned_sales_person == recipient %}
+    <p><strong>Action Required:</strong> Please review this lead and schedule appropriate follow-up actions.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block action_buttons %}
+<div style="text-align: center; margin: 20px 0;">
+    <a href="{{ request.build_absolute_uri }}/leads/{{ content_object.id }}/" class="button">
+        View Lead Details
+    </a>
+</div>
+{% endblock %}

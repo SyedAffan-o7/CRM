@@ -1,0 +1,39 @@
+{% extends "notifications_app/emails/base_email.html" %}
+
+{% block title %}Follow-up Reminder - AAA CRM{% endblock %}
+
+{% block header_subtitle %}Follow-up Reminder{% endblock %}
+
+{% block content %}
+<div class="priority-high">
+    <h2>📅 Follow-up Reminder</h2>
+    <p>Hello {{ recipient.get_full_name|default:recipient.username }},</p>
+    
+    <p>This is a reminder that you have a follow-up scheduled:</p>
+    
+    <div class="details">
+        <strong>Contact:</strong> {{ content_object.lead.contact_name }}<br>
+        {% if content_object.lead.company_name %}
+        <strong>Company:</strong> {{ content_object.lead.company_name }}<br>
+        {% endif %}
+        <strong>Phone:</strong> {{ content_object.lead.phone_number }}<br>
+        <strong>Scheduled:</strong> {{ content_object.scheduled_date|date:"F d, Y at g:i A" }}<br>
+        <strong>Type:</strong> {{ content_object.get_followup_type_display }}<br>
+        {% if content_object.notes %}
+        <strong>Notes:</strong> {{ content_object.notes }}<br>
+        {% endif %}
+    </div>
+    
+    {% if data.is_reminder %}
+    <p><strong>⏰ This follow-up is scheduled for tomorrow.</strong> Please prepare accordingly.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block action_buttons %}
+<div style="text-align: center; margin: 20px 0;">
+    <a href="{{ request.build_absolute_uri }}/leads/{{ content_object.lead.id }}/" class="button">
+        View Lead Details
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Import Categories & Subcategories (CSV/XLSX)</h2>
+    <a href="{% url 'products:category-list' %}" class="btn btn-outline-secondary">Back to Categories</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="csvFile" class="form-label">CSV or XLSX File</label>
+          <input class="form-control" type="file" id="csvFile" name="file" accept=".csv,.xlsx" required>
+          <div class="form-text">Upload a CSV or XLSX file where each column header is a Category and values under that column are Subcategories.</div>
+        </div>
+        <button class="btn btn-primary" type="submit">Import</button>
+      </form>
+
+      <hr>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5>Example Format</h5>
+        <button type="button" class="btn btn-success" onclick="downloadExampleCSV()">
+          <i class="bi bi-download me-1"></i>Download Example CSV
+        </button>
+      </div>
+      <pre class="bg-light p-3 border rounded">
+PPE,Electronics,Pharma
+Gloves,TV,Tablets
+Helmets,,Syringes
+Masks,Audio,
+      </pre>
+
+      <h5>Notes</h5>
+      <ul>
+        <li>Existing categories/subcategories will be reused. Inactive ones are reactivated.</li>
+        <li>Blank cells are ignored.</li>
+        <li>Created items are attributed to the currently logged-in user.</li>
+      </ul>
+  </div>
+</div>
+
+<script>
+function downloadExampleCSV() {
+  // Show loading state
+  const button = event.target.closest('button');
+  const originalText = button.innerHTML;
+  button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Generating...';
+  button.disabled = true;
+
+  fetch('{% url "products:download-example-csv" %}')
+    .then(response => response.blob())
+    .then(blob => {
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = 'example_categories_' + new Date().getTime() + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      // Show success message
+      showToast('Example CSV downloaded successfully!', 'success');
+    })
+    .catch(error => {
+      console.error('Error downloading CSV:', error);
+      showToast('Failed to download example CSV. Please try again.', 'error');
+    })
+    .finally(() => {
+      // Reset button
+      button.innerHTML = originalText;
+      button.disabled = false;
+    });
+}
+
+function showToast(message, type = 'info') {
+  // Simple toast notification
+  const toast = document.createElement('div');
+  toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+  toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+  toast.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.parentNode.removeChild(toast);
+    }
+  }, 5000);
+}
+</script>
+{% endblock %}

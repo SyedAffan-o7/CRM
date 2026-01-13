@@ -1,0 +1,596 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Subcategories - AAA CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-sitemap me-2"></i>Product Subcategories</h2>
+                <div>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addSubcategoryModal">
+                        <i class="fas fa-plus me-1"></i>Add Subcategory
+                    </button>
+                    <button type="button" id="bulkDeleteBtn" class="btn btn-outline-danger ms-2" data-bs-toggle="modal" data-bs-target="#bulkDeleteModal" disabled>
+                        <i class="bi bi-trash me-1"></i>Delete Selected
+                    </button>
+                    <a href="{% url 'products:products-home' %}" class="btn btn-outline-secondary ms-2">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Products
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% if subcategories %}
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="subcategoriesTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:36px;"><input type="checkbox" id="selectAll"></th>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Description</th>
+                                        <th>Created Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for subcategory in subcategories %}
+                                    <tr id="subcategory-row-{{ subcategory.id }}" data-subcategory-id="{{ subcategory.id }}" data-category-id="{{ subcategory.category.id }}">
+                                        <td><input type="checkbox" class="row-select" value="{{ subcategory.id }}"></td>
+                                        <td class="cell-name"><strong>{{ subcategory.name }}</strong></td>
+                                        <td class="cell-category">
+                                            <span class="badge bg-primary">{{ subcategory.category.name }}</span>
+                                        </td>
+                                        <td class="cell-description">{{ subcategory.description|default:"No description" }}</td>
+                                        <td class="cell-created">{{ subcategory.created_at|date:"M d, Y" }}</td>
+                                        <td class="cell-status">
+                                            {% if subcategory.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="cell-actions">
+                                            <button class="btn btn-sm btn-outline-primary me-2 edit-subcategory-btn"
+                                                    data-subcategory-id="{{ subcategory.id }}"
+                                                    data-subcategory-name="{{ subcategory.name|escapejs }}"
+                                                    data-category-id="{{ subcategory.category.id }}"
+                                                    data-subcategory-description="{{ subcategory.description|default:''|escapejs }}">
+                                                <i class="bi bi-pencil-square me-1"></i>Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger delete-subcategory-btn"
+                                                    data-subcategory-id="{{ subcategory.id }}"
+                                                    data-subcategory-name="{{ subcategory.name|escapejs }}">
+                                                <i class="bi bi-trash me-1"></i>Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Subcategories Found</h5>
+                            <p class="text-muted">Start by creating your first product subcategory.</p>
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addSubcategoryModal">
+                                <i class="fas fa-plus me-1"></i>Add First Subcategory
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Subcategory Modal -->
+<div class="modal fade" id="addSubcategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Add New Subcategory</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="subcategoryForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="{{ form.category.id_for_label }}" class="form-label">Category *</label>
+                        {{ form.category }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Subcategory Name *</label>
+                        {{ form.name }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                        {{ form.description }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="submitBtn">
+                        <span class="spinner-border spinner-border-sm d-none me-1" id="loadingSpinner"></span>
+                        <i class="fas fa-save me-1"></i>Save Subcategory
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden template for category options (clone from add form) -->
+<div id="categoryOptionsTemplate" class="d-none">
+    {{ form.category }}
+</div>
+
+<!-- Edit Subcategory Modal -->
+<div class="modal fade" id="editSubcategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Edit Subcategory</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editSubcategoryId" />
+                <div class="mb-3">
+                    <label class="form-label">Category *</label>
+                    <select id="editCategory" class="form-select"></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Subcategory Name *</label>
+                    <input type="text" id="editName" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea id="editDescription" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveEditBtn">
+                    <span class="spinner-border spinner-border-sm d-none me-1" id="editLoadingSpinner"></span>
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Subcategory Modal -->
+<div class="modal fade" id="deleteSubcategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-trash me-2"></i>Delete Subcategory</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="deleteSubcategoryId" />
+                <p>Are you sure you want to delete <strong id="deleteSubcategoryName"></strong>?</p>
+                <p class="text-muted mb-0">This performs a soft delete (it will be marked inactive).</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <span class="spinner-border spinner-border-sm d-none me-1" id="deleteLoadingSpinner"></span>
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Delete Modal -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-trash me-2"></i>Delete Selected Subcategories</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the selected subcategories?</p>
+                <p class="text-muted mb-0">This performs a soft delete (they will be marked inactive).</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmBulkDeleteBtn">
+                    <span class="spinner-border spinner-border-sm d-none me-1" id="bulkDeleteLoadingSpinner"></span>
+                    Delete Selected
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('subcategoryForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const modal = new bootstrap.Modal(document.getElementById('addSubcategoryModal'));
+
+    // Add event listeners for edit and delete buttons
+    document.querySelectorAll('.edit-subcategory-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-subcategory-id');
+            const name = this.getAttribute('data-subcategory-name');
+            const categoryId = this.getAttribute('data-category-id');
+            const description = this.getAttribute('data-subcategory-description');
+            openEditSubcategoryModal(id, name, categoryId, description);
+        });
+    });
+
+    document.querySelectorAll('.delete-subcategory-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-subcategory-id');
+            const name = this.getAttribute('data-subcategory-name');
+            openDeleteSubcategoryModal(id, name);
+        });
+    });
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        loadingSpinner.classList.remove('d-none');
+        
+        const formData = new FormData(form);
+        
+        fetch('{% url "products:subcategory-list" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Add new row to table
+                const tableBody = document.querySelector('#subcategoriesTable tbody');
+                if (tableBody) {
+                    const newRow = `
+                        <tr id="subcategory-row-${data.subcategory.id}" data-subcategory-id="${data.subcategory.id}" data-category-id="${data.subcategory.category_id}">
+                            <td><input type=\"checkbox\" class=\"row-select\" value=\"${data.subcategory.id}\"></td>
+                            <td class="cell-name"><strong>${data.subcategory.name}</strong></td>
+                            <td class="cell-category"><span class="badge bg-primary">${data.subcategory.category_name}</span></td>
+                            <td class="cell-description">${data.subcategory.description || 'No description'}</td>
+                            <td class="cell-created">${data.subcategory.created_at}</td>
+                            <td class="cell-status"><span class="badge bg-success">Active</span></td>
+                            <td class="cell-actions">
+                                <button class="btn btn-sm btn-outline-primary me-2 edit-subcategory-btn"
+                                        data-subcategory-id="${data.subcategory.id}"
+                                        data-subcategory-name="${data.subcategory.name.replace(/"/g, '&quot;')}"
+                                        data-category-id="${data.subcategory.category_id}"
+                                        data-subcategory-description="${(data.subcategory.description || '').replace(/"/g, '&quot;')}">
+                                    <i class="bi bi-pencil-square me-1"></i>Edit
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-subcategory-btn"
+                                        data-subcategory-id="${data.subcategory.id}"
+                                        data-subcategory-name="${data.subcategory.name.replace(/"/g, '&quot;')}">
+                                    <i class="bi bi-trash me-1"></i>Delete
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.insertAdjacentHTML('afterbegin', newRow);
+
+                    // Re-bind event listeners for the new buttons
+                    const newEditBtn = tableBody.querySelector('tr:first-child .edit-subcategory-btn');
+                    const newDeleteBtn = tableBody.querySelector('tr:first-child .delete-subcategory-btn');
+
+                    newEditBtn.addEventListener('click', function() {
+                        const id = this.getAttribute('data-subcategory-id');
+                        const name = this.getAttribute('data-subcategory-name');
+                        const categoryId = this.getAttribute('data-category-id');
+                        const description = this.getAttribute('data-subcategory-description');
+                        openEditSubcategoryModal(id, name, categoryId, description);
+                    });
+
+                    newDeleteBtn.addEventListener('click', function() {
+                        const id = this.getAttribute('data-subcategory-id');
+                        const name = this.getAttribute('data-subcategory-name');
+                        openDeleteSubcategoryModal(id, name);
+                    });
+
+                    bindRowSelectEvents();
+                    updateBulkDeleteState();
+                } else {
+                    // Reload page if no table exists (empty state)
+                    location.reload();
+                }
+                
+                // Reset form and close modal
+                form.reset();
+                modal.hide();
+                
+                // Show success message
+                showToast('success', data.message);
+            } else {
+                showToast('error', 'Please correct the errors below.');
+                // Handle form errors here if needed
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('error', 'An error occurred. Please try again.');
+        })
+        .finally(() => {
+            // Reset loading state
+            submitBtn.disabled = false;
+            loadingSpinner.classList.add('d-none');
+        });
+    });
+
+    // Bulk select controls
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+        selectAll.addEventListener('change', () => {
+            document.querySelectorAll('.row-select').forEach(cb => {
+                cb.checked = selectAll.checked;
+            });
+            updateBulkDeleteState();
+        });
+    }
+
+    bindRowSelectEvents();
+});
+
+function bindRowSelectEvents() {
+    document.querySelectorAll('.row-select').forEach(cb => {
+        // Avoid double-binding
+        cb.removeEventListener('change', updateBulkDeleteState);
+        cb.addEventListener('change', updateBulkDeleteState);
+    });
+}
+
+function getSelectedIds() {
+    return Array.from(document.querySelectorAll('.row-select:checked')).map(el => parseInt(el.value));
+}
+
+function updateBulkDeleteState() {
+    const btn = document.getElementById('bulkDeleteBtn');
+    if (!btn) return;
+    const selected = getSelectedIds();
+    btn.disabled = selected.length === 0;
+}
+
+function showToast(type, message) {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 5000);
+}
+
+// Helpers
+function getCsrfToken() {
+    const tokenInput = document.querySelector('#subcategoryForm input[name="csrfmiddlewaretoken"]');
+    return tokenInput ? tokenInput.value : '';
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Edit flow
+let editModal, deleteModal, bulkDeleteModal;
+document.addEventListener('DOMContentLoaded', () => {
+    editModal = new bootstrap.Modal(document.getElementById('editSubcategoryModal'));
+    deleteModal = new bootstrap.Modal(document.getElementById('deleteSubcategoryModal'));
+    bulkDeleteModal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+
+    // Confirm bulk delete
+    const confirmBulkBtn = document.getElementById('confirmBulkDeleteBtn');
+    const spinner = document.getElementById('bulkDeleteLoadingSpinner');
+    if (confirmBulkBtn) {
+        confirmBulkBtn.addEventListener('click', () => {
+            const ids = getSelectedIds();
+            if (ids.length === 0) return;
+            confirmBulkBtn.disabled = true;
+            spinner.classList.remove('d-none');
+
+            fetch('{% url "products:subcategory-list" %}', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ ids })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    (data.ids || ids).forEach(id => {
+                        const row = document.getElementById(`subcategory-row-${id}`);
+                        if (row && row.parentNode) row.parentNode.removeChild(row);
+                    });
+                    showToast('success', data.message || 'Deleted successfully');
+                    updateBulkDeleteState();
+                    bulkDeleteModal.hide();
+                } else {
+                    showToast('error', 'Failed to delete selected');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('error', 'An error occurred while deleting');
+            })
+            .finally(() => {
+                confirmBulkBtn.disabled = false;
+                spinner.classList.add('d-none');
+            });
+        });
+    }
+});
+
+function openEditSubcategoryModal(id, name, categoryId, description) {
+    // Populate category options from hidden template based on add form select
+    const template = document.querySelector('#categoryOptionsTemplate select');
+    const editCategory = document.getElementById('editCategory');
+    editCategory.innerHTML = template ? template.innerHTML : '';
+
+    document.getElementById('editSubcategoryId').value = id;
+    document.getElementById('editName').value = name || '';
+    document.getElementById('editDescription').value = description || '';
+    editCategory.value = String(categoryId || '');
+
+    editModal.show();
+
+    const saveBtn = document.getElementById('saveEditBtn');
+    const spinner = document.getElementById('editLoadingSpinner');
+
+    // Remove any previous click handlers by cloning
+    const newSaveBtn = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+
+    newSaveBtn.addEventListener('click', () => {
+        const payload = {
+            id: parseInt(document.getElementById('editSubcategoryId').value),
+            name: document.getElementById('editName').value.trim(),
+            description: document.getElementById('editDescription').value.trim(),
+            category_id: parseInt(document.getElementById('editCategory').value)
+        };
+
+        newSaveBtn.disabled = true;
+        spinner.classList.remove('d-none');
+
+        fetch('{% url "products:subcategory-list" %}', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Update row in table
+                const row = document.getElementById(`subcategory-row-${payload.id}`);
+                if (row) {
+                    row.querySelector('.cell-name').innerHTML = `<strong>${escapeHtml(data.subcategory.name)}</strong>`;
+                    row.querySelector('.cell-category').innerHTML = `<span class="badge bg-primary">${escapeHtml(data.subcategory.category_name)}</span>`;
+                    row.querySelector('.cell-description').textContent = data.subcategory.description || 'No description';
+                    row.setAttribute('data-category-id', data.subcategory.category_id);
+                    // Update action buttons' onclick values
+                    row.querySelector('.cell-actions').innerHTML = `
+                        <button class="btn btn-sm btn-outline-primary me-2 edit-subcategory-btn"
+                                data-subcategory-id="${data.subcategory.id}"
+                                data-subcategory-name="${data.subcategory.name.replace(/"/g, '&quot;')}"
+                                data-category-id="${data.subcategory.category_id}"
+                                data-subcategory-description="${(data.subcategory.description || '').replace(/"/g, '&quot;')}">
+                            <i class="bi bi-pencil-square me-1"></i>Edit
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-subcategory-btn"
+                                data-subcategory-id="${data.subcategory.id}"
+                                data-subcategory-name="${data.subcategory.name.replace(/"/g, '&quot;')}">
+                            <i class="bi bi-trash me-1"></i>Delete
+                        </button>
+                    `;
+                }
+                editModal.hide();
+                showToast('success', data.message || 'Updated successfully');
+            } else {
+                showToast('error', 'Failed to update subcategory');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('error', 'An error occurred while updating');
+        })
+        .finally(() => {
+            newSaveBtn.disabled = false;
+            spinner.classList.add('d-none');
+        });
+    });
+}
+
+// Delete flow
+function openDeleteSubcategoryModal(id, name) {
+    document.getElementById('deleteSubcategoryId').value = id;
+    document.getElementById('deleteSubcategoryName').textContent = name || '';
+    deleteModal.show();
+
+    const deleteBtn = document.getElementById('confirmDeleteBtn');
+    const spinner = document.getElementById('deleteLoadingSpinner');
+
+    // Remove previous handler
+    const newDeleteBtn = deleteBtn.cloneNode(true);
+    deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+
+    newDeleteBtn.addEventListener('click', () => {
+        newDeleteBtn.disabled = true;
+        spinner.classList.remove('d-none');
+
+        const payload = { id: parseInt(document.getElementById('deleteSubcategoryId').value) };
+
+        fetch('{% url "products:subcategory-list" %}', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Remove row
+                const row = document.getElementById(`subcategory-row-${payload.id}`);
+                if (row && row.parentNode) {
+                    row.parentNode.removeChild(row);
+                }
+                deleteModal.hide();
+                showToast('success', data.message || 'Deleted successfully');
+                updateBulkDeleteState();
+            } else {
+                showToast('error', 'Failed to delete subcategory');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('error', 'An error occurred while deleting');
+        })
+        .finally(() => {
+            newDeleteBtn.disabled = false;
+            spinner.classList.add('d-none');
+        });
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,581 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AAA CRM{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+    
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .nav-link {
+            color: #495057;
+        }
+        .nav-link:hover {
+            color: #007bff;
+        }
+        .nav-link.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .card-stats {
+            border-left: 4px solid #007bff;
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1055;
+        }
+        
+        .toast {
+            min-width: 300px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .toast-success {
+            border-left: 4px solid #28a745;
+        }
+        
+        .toast-error {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .toast-warning {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .toast-info {
+            border-left: 4px solid #17a2b8;
+        }
+        .card-stats.success {
+            border-left-color: #28a745;
+        }
+        .card-stats.warning {
+            border-left-color: #ffc107;
+        }
+        .card-stats.danger {
+            border-left-color: #dc3545;
+        }
+        .priority-high {
+            color: #dc3545;
+        }
+        .priority-medium {
+            color: #ffc107;
+        }
+        .priority-low {
+            color: #28a745;
+        }
+        .status-badge {
+            font-size: 0.8em;
+        }
+        /* Notification Bell Styles */
+        #notificationDropdown .bi-bell {
+            font-size: 1.1em;
+            color: #6c757d;
+            display: inline-block !important;
+            visibility: visible !important;
+        }
+        #notificationDropdown:hover .bi-bell {
+            color: #495057;
+        }
+    </style>
+    <!-- Global Theme Stylesheet -->
+    <link href="{% static 'css/theme.css' %}" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3 d-flex flex-column h-100">
+                    <div class="text-center mb-4">
+                        <div class="d-flex align-items-center justify-content-center mb-2">
+                            <img src="{% static 'images/aaa_logo.png' %}" alt="AAA Logo" style="height: 40px; margin-right: 10px;">
+                            <h4 class="text-primary mb-0">AAA CRM</h4>
+                        </div>
+                    </div>
+                    
+                    <ul class="nav flex-column d-flex flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'crm_app:dashboard' %}">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'lead' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'crm_app:lead_list' %}">
+                                <i class="bi bi-person-plus"></i> Enquiries
+                                {% if overdue_followups_count %}
+                                <span class="badge bg-danger float-end">{{ overdue_followups_count }}</span>
+                                {% endif %}
+                                {% if today_followups_count %}
+                                <span class="badge bg-warning float-end">{{ today_followups_count }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'enquiry_stages' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'crm_app:enquiry_stages' %}">
+                                <i class="bi bi-kanban"></i> Enquiry Stages
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'contact' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'crm_app:contact_list' %}">
+                                <i class="bi bi-people"></i> Customers
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'account' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'crm_app:account_list' %}">
+                                <i class="bi bi-building"></i> Accounts
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'deal' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'crm_app:deal_list' %}">
+                                <i class="bi bi-currency-dollar"></i> Deals
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.app_name == 'invoices_app' %}active{% endif %}" href="{% url 'invoices_app:invoice_list' %}">
+                                <i class="bi bi-receipt"></i> Invoices
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'media_gallery' %}active{% endif %}" href="{% url 'media_app:media_gallery' %}">
+                                <i class="bi bi-images"></i> Media
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'outbound_list' %}active{% endif %}" href="{% url 'outbound_app:outbound_list' %}">
+                                <i class="bi bi-whatsapp"></i> Outbound
+                            </a>
+                        </li>
+                        {% if user.is_superuser or user_role == 'SUPERUSER' %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'activity' in request.resolver_match.url_name or 'outbound_dashboard' in request.resolver_match.url_name %}active{% endif %}"
+                               href="#" data-bs-toggle="collapse" data-bs-target="#reportsSubmenu" aria-expanded="false">
+                                <i class="bi bi-bar-chart"></i> Reports <i class="bi bi-chevron-down ms-auto"></i>
+                            </a>
+                            <div class="collapse {% if 'activity' in request.resolver_match.url_name or 'outbound_dashboard' in request.resolver_match.url_name %}show{% endif %}" id="reportsSubmenu">
+                                <ul class="nav flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link {% if 'activity' in request.resolver_match.url_name %}active{% endif %}"
+                                           href="{% url 'crm_app:activity_list' %}">
+                                            <i class="bi bi-clock-history"></i> Activities
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link {% if request.resolver_match.url_name == 'report_enquiries_pipeline' %}active{% endif %}"
+                                           href="{% url 'crm_app:report_enquiries_pipeline' %}">
+                                            <i class="bi bi-diagram-3"></i> Enquiries Pipeline
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link {% if request.resolver_match.url_name == 'report_followups_compliance' %}active{% endif %}"
+                                           href="{% url 'crm_app:report_followups_compliance' %}">
+                                            <i class="bi bi-calendar-check"></i> Follow-ups Compliance
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link {% if 'outbound_dashboard' in request.resolver_match.url_name %}active{% endif %}"
+                                           href="{% url 'outbound_app:outbound_dashboard' %}">
+                                            <i class="bi bi-graph-up"></i> Analytics
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        {% endif %}
+                        {% if user.is_superuser or user_role == 'SUPERUSER' %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'settings' in request.resolver_match.url_name %}active{% endif %}" href="#" data-bs-toggle="collapse" data-bs-target="#settingsSubmenu" aria-expanded="false">
+                                <i class="bi bi-gear"></i> Settings <i class="bi bi-chevron-down ms-auto"></i>
+                            </a>
+                            <div class="collapse" id="settingsSubmenu">
+                                <ul class="nav flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link {% if 'user' in request.resolver_match.url_name or 'role' in request.resolver_match.url_name %}active{% endif %}" href="#" data-bs-toggle="collapse" data-bs-target="#userManagementSubmenu" aria-expanded="false">
+                                            <i class="bi bi-people"></i> User Management <i class="bi bi-chevron-down ms-auto"></i>
+                                        </a>
+                                        <div class="collapse" id="userManagementSubmenu">
+                                            <ul class="nav flex-column ms-3">
+                                                <li class="nav-item">
+                                                    <a class="nav-link {% if 'user_management' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'accounts_app:user_management' %}">
+                                                        <i class="bi bi-people"></i> Manage Users
+                                                    </a>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <a class="nav-link {% if 'role_management' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'accounts_app:role_management' %}">
+                                                        <i class="bi bi-shield-check"></i> Manage Roles
+                                                    </a>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <a class="nav-link" href="{% url 'accounts_app:user_permissions_detail' user.id %}">
+                                                        <i class="bi bi-key"></i> User Permissions
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link {% if 'settings' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'crm_app:settings' %}">
+                                            <i class="bi bi-sliders"></i> General Settings
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link {% if request.path == '/settings/products/' %}active{% endif %}"
+                                           href="{% url 'products:products-home' %}">
+                                          <i class="bi bi-box-seam"></i>
+                                          Products
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item mt-auto">
+                            <div class="nav-link text-muted small">
+                                <i class="bi bi-person-circle"></i> {{ user.username }}
+                                {% if user.is_superuser or user_role == 'SUPERUSER' %}<span class="badge bg-warning ms-1">Admin</span>{% endif %}
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <form method="post" action="{% url 'logout' %}" class="w-100 d-block" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="nav-link btn btn-link w-100 text-start p-0" style="border: none; background: none; color: inherit; text-decoration: none;">
+                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        {% block page_actions %}{% endblock %}
+                        
+                        <!-- Notification Bell -->
+                        <div class="dropdown me-2 ms-3">
+                            <button class="btn btn-outline-secondary btn-sm position-relative " type="button" 
+                                    id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                                    onclick="loadNotifications()">
+                                <i class="bi bi-bell" style="display: inline-block !important; visibility: visible !important;">
+                                    <!-- Fallback SVG bell icon in case Bootstrap Icons fail to load -->
+                                    
+                                </i>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                                      id="notificationBadge" style="display: none;">
+                                    0
+                                </span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown" 
+                                style="width: 350px; max-height: 400px; overflow-y: auto;">
+                                <li><h6 class="dropdown-header">Recent Notifications</h6></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <div id="notificationsList">
+                                    <li><span class="dropdown-item-text text-muted">Loading notifications...</span></li>
+                                </div>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-center" href="{% url 'notifications_app:notification_list' %}">
+                                        <small>View All Notifications</small>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm ms-2" title="Toggle theme">
+                            <i id="themeToggleIcon" class="bi bi-moon-stars"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages are rendered via Toasts only to avoid duplicates -->
+
+                <!-- Page content -->
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container">
+        <!-- Toasts will be dynamically added here -->
+    </div>
+    
+    {# Serialized Django messages for JS (prevents JS lint errors) #}
+    {% if messages %}
+    <div id="django-messages-data" class="d-none"
+         data-messages="[{% for message in messages %}{% if not forloop.first %},{% endif %}{&quot;text&quot;:&quot;{{ message|escapejs }}&quot;,&quot;tags&quot;:&quot;{{ message.tags|escapejs }}&quot;}{% endfor %}]">
+    </div>
+    {% endif %}
+
+    <!-- Add CSRF token to JavaScript context -->
+    <script>
+        // Set CSRF token for AJAX requests
+        let csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+        
+        // Function to get CSRF token from cookie as fallback
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // If CSRF token not found in form, try to get from cookie
+        if (!csrftoken) {
+            const tokenFromCookie = getCookie('csrftoken');
+            if (tokenFromCookie) {
+                csrftoken = tokenFromCookie;
+            }
+        }
+        
+        // Store in global scope for easy access
+        window.csrftoken = csrftoken;
+    </script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Toast Notification System -->
+    <script>
+        // Toast notification function
+        function showToast(message, type = 'info', duration = 5000) {
+            const toastContainer = document.getElementById('toast-container');
+            const toastId = 'toast-' + Date.now();
+            
+            // Map Django message tags to Bootstrap toast classes
+            const typeMap = {
+                'success': 'toast-success',
+                'error': 'toast-error',
+                'warning': 'toast-warning',
+                'info': 'toast-info',
+                'debug': 'toast-info'
+            };
+            
+            const iconMap = {
+                'success': 'bi-check-circle-fill text-success',
+                'error': 'bi-exclamation-triangle-fill text-danger',
+                'warning': 'bi-exclamation-triangle-fill text-warning',
+                'info': 'bi-info-circle-fill text-info',
+                'debug': 'bi-bug-fill text-secondary'
+            };
+            
+            const toastClass = typeMap[type] || 'toast-info';
+            const iconClass = iconMap[type] || 'bi-info-circle-fill text-info';
+            
+            const toastHTML = `
+                <div id="${toastId}" class="toast ${toastClass}" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header">
+                        <i class="bi ${iconClass} me-2"></i>
+                        <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+                        <small class="text-muted">just now</small>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+            
+            const toastElement = document.getElementById(toastId);
+            // Guard against missing Bootstrap namespace
+            if (window.bootstrap && bootstrap.Toast) {
+                const toast = new bootstrap.Toast(toastElement, {
+                    autohide: true,
+                    delay: duration
+                });
+                toast.show();
+                // Remove toast element after it's hidden
+                toastElement.addEventListener('hidden.bs.toast', function() {
+                    toastElement.remove();
+                });
+            }
+        }
+        
+        // Convert Django messages to toasts on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const dataHolder = document.getElementById('django-messages-data');
+            if (dataHolder && dataHolder.dataset.messages) {
+                try {
+                    const msgs = JSON.parse(dataHolder.dataset.messages);
+                    const shown = new Set();
+                    msgs.forEach(m => {
+                        const text = m.text || '';
+                        const tag = m.tags || 'info';
+                        const key = `${tag}|${text}`;
+                        if (shown.has(key)) return; // prevent showing exact duplicates
+                        shown.add(key);
+                        showToast(text, tag);
+                    });
+                } catch (e) {
+                    console.error('Failed to parse Django messages:', e);
+                }
+            }
+        });
+        
+    </script>
+    
+    <!-- Theme Toggle (Dark/Light) -->
+    <script>
+        (function() {
+            const storageKey = 'aaa_theme';
+            const root = document.documentElement;
+            const btn = document.getElementById('themeToggle');
+            const icon = document.getElementById('themeToggleIcon');
+
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    root.setAttribute('data-theme', 'dark');
+                    if (icon) { icon.classList.remove('bi-moon-stars'); icon.classList.add('bi-sun'); }
+                } else {
+                    root.removeAttribute('data-theme');
+                    if (icon) { icon.classList.remove('bi-sun'); icon.classList.add('bi-moon-stars'); }
+                }
+            }
+
+            // Initialize
+            const saved = localStorage.getItem(storageKey);
+            applyTheme(saved === 'dark' ? 'dark' : 'light');
+
+            // Toggle
+            if (btn) {
+                btn.addEventListener('click', function() {
+                    const isDark = root.getAttribute('data-theme') === 'dark';
+                    const next = isDark ? 'light' : 'dark';
+                    localStorage.setItem(storageKey, next);
+                    applyTheme(next);
+                });
+            }
+        })();
+    </script>
+    
+    <!-- Notification System -->
+    <script>
+        let notificationsLoaded = false;
+        
+        function loadNotifications() {
+            if (notificationsLoaded) return;
+            
+            fetch('/notifications/api/unread/')
+                .then(response => response.json())
+                .then(data => {
+                    updateNotificationBell(data.total_unread);
+                    displayNotifications(data.notifications);
+                    notificationsLoaded = true;
+                })
+                .catch(error => {
+                    console.error('Error loading notifications:', error);
+                    document.getElementById('notificationsList').innerHTML = 
+                        '<li><span class="dropdown-item-text text-danger">Error loading notifications</span></li>';
+                });
+        }
+        
+        function updateNotificationBell(count) {
+            const badge = document.getElementById('notificationBadge');
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+        
+        function displayNotifications(notifications) {
+            const container = document.getElementById('notificationsList');
+            
+            if (notifications.length === 0) {
+                container.innerHTML = '<li><span class="dropdown-item-text text-muted">No new notifications</span></li>';
+                return;
+            }
+            
+            let html = '';
+            notifications.forEach(notification => {
+                const priorityClass = notification.priority === 'URGENT' ? 'text-danger' : 
+                                    notification.priority === 'HIGH' ? 'text-warning' : '';
+                
+                html += `
+                    <li>
+                        <a class="dropdown-item py-2" href="/notifications/${notification.id}/">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="dropdown-header mb-1 ${priorityClass}">${notification.title}</h6>
+                                    <p class="mb-1 small text-muted">${notification.message}</p>
+                                    <small class="text-muted">${notification.created_at}</small>
+                                </div>
+                                ${notification.priority === 'URGENT' ? '<i class="bi bi-exclamation-triangle text-danger"></i>' : ''}
+                            </div>
+                        </a>
+                    </li>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Auto-refresh notifications every 5 minutes
+        setInterval(() => {
+            if (notificationsLoaded) {
+                notificationsLoaded = false;
+                loadNotifications();
+            }
+        }, 300000); // 5 minutes
+        
+        // Load initial notification count on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Debug: Check if notification bell is visible
+            const notificationBtn = document.getElementById('notificationDropdown');
+            const bellIcon = notificationBtn ? notificationBtn.querySelector('.bi-bell') : null;
+            const svgIcon = bellIcon ? bellIcon.querySelector('svg') : null;
+            
+            console.log('Notification bell button:', notificationBtn);
+            console.log('Bell icon element:', bellIcon);
+            console.log('Bell icon classes:', bellIcon ? bellIcon.className : 'No icon found');
+            
+            // Fallback: Show SVG if Bootstrap Icon is not loaded
+            if (bellIcon && svgIcon && window.getComputedStyle(bellIcon).fontFamily !== 'bootstrap-icons') {
+                console.log('Bootstrap Icons not loaded, showing SVG fallback');
+                svgIcon.style.display = 'inline-block';
+            }
+            
+            fetch('/notifications/api/unread/')
+                .then(response => response.json())
+                .then(data => {
+                    updateNotificationBell(data.total_unread);
+                })
+                .catch(error => console.error('Error loading notification count:', error));
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

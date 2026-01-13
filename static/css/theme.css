@@ -1,0 +1,624 @@
+/* AAA CRM Theme - Visual Glow-Up
+   Author: Cascade
+   Purpose: Modern, clean, professional UI/UX without changing backend logic
+*/
+
+/* ===== Design System ===== */
+:root {
+  /* Palette */
+  --brand-primary: #4F46E5; /* Indigo 600 */
+  --brand-primary-700: #4338CA; /* Indigo 700 */
+  --brand-secondary: #22C55E; /* Green 500 */
+  --brand-accent: #F59E0B; /* Amber 500 */
+
+  --text-primary: #0f172a; /* Slate 900 */
+  --text-secondary: #334155; /* Slate 700 */
+  --text-muted: #64748b; /* Slate 500 */
+
+  --bg-body: #f6f8fb; /* Subtle light */
+  --bg-card: #ffffff;
+  --bg-soft: #f8fafc; /* Very light panel */
+
+  --border: #e5e7eb; /* Gray 200 */
+  --border-strong: #d1d5db; /* Gray 300 */
+
+  --ring: rgba(79, 70, 229, 0.25); /* Primary ring */
+
+  --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.1), 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 8px 20px rgba(2, 8, 23, 0.06);
+  --shadow-lg: 0 16px 32px rgba(2, 6, 23, 0.08);
+
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+}
+
+/* ===== Base Typography & Page ===== */
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  color: var(--text-primary);
+  background: var(--bg-body);
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+p, small, .text-muted { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted) !important; }
+
+/* Links */
+a { color: var(--brand-primary); text-decoration: none; }
+a:hover { color: var(--brand-primary-700); text-decoration: underline; }
+
+/* ===== Layout: Sidebar & Header ===== */
+.sidebar {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-right: 1px solid var(--border);
+}
+.sidebar .nav-link {
+  color: var(--text-secondary);
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-sm);
+  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+.sidebar .nav-link:hover {
+  color: var(--brand-primary);
+  background: #eef2ff; /* indigo-50 */
+}
+.sidebar .nav-link.active {
+  color: #fff !important;
+  background: var(--brand-primary);
+  box-shadow: 0 6px 14px rgba(79, 70, 229, 0.25);
+}
+
+/* Page header */
+.border-bottom { border-color: var(--border) !important; }
+
+/* ===== Cards ===== */
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  background: var(--bg-card);
+}
+.card-header {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.card-stats {
+  border-left: none !important;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+}
+.card-stats .card-body { padding: 1.25rem 1.25rem; }
+
+/* ===== Buttons ===== */
+.btn { border-radius: 10px; transition: all 160ms ease; }
+.btn:focus { box-shadow: 0 0 0 0.25rem var(--ring) !important; }
+
+.btn-primary {
+  background: var(--brand-primary) !important;
+  border-color: var(--brand-primary) !important;
+}
+.btn-primary:hover { background: var(--brand-primary-700) !important; border-color: var(--brand-primary-700) !important; }
+
+.btn-outline-primary {
+  color: var(--brand-primary) !important;
+  border-color: var(--brand-primary) !important;
+  background: transparent !important;
+}
+.btn-outline-primary:hover {
+  background: #eef2ff !important;
+}
+
+.btn-success { background: #16a34a !important; border-color: #16a34a !important; }
+.btn-warning { background: #f59e0b !important; border-color: #f59e0b !important; }
+.btn-danger { background: #ef4444 !important; border-color: #ef4444 !important; }
+
+/* Ghost/soft buttons */
+.btn-soft {
+  color: var(--brand-primary);
+  background: #eef2ff;
+  border: 1px solid #e0e7ff;
+}
+.btn-soft:hover { background: #e0e7ff; }
+
+/* ===== Forms ===== */
+.form-control, .form-select {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 0.25rem var(--ring);
+}
+.form-label { font-weight: 500; color: var(--text-secondary); }
+.input-group-text { border-radius: 10px; }
+
+/* ===== Tables ===== */
+.table {
+  border-color: var(--border);
+}
+.table thead th {
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.table-hover tbody tr:hover { background-color: #f1f5f9; }
+.table > :not(caption) > * > * { padding: 0.9rem 1rem; }
+
+/* ===== Badges & Pills ===== */
+.badge { border-radius: 9999px; font-weight: 500; }
+.badge.bg-danger { background-color: #ef4444 !important; }
+.badge.bg-warning { background-color: #f59e0b !important; color: #111827 !important; }
+.badge.bg-info { background-color: #06b6d4 !important; }
+.badge.bg-success { background-color: #16a34a !important; }
+
+/* ===== Progress ===== */
+.progress { height: 10px; border-radius: 9999px; background: #eef2ff; }
+.progress-bar { border-radius: 9999px; }
+
+/* ===== Modals ===== */
+.modal-content { border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
+.modal-header { border-bottom: 1px solid var(--border); }
+.modal-footer { border-top: 1px solid var(--border); }
+
+/* Enquiry Products & Categories modal sizing */
+/* Apply this class on the modal-dialog element */
+.modal-ecp {
+  max-width: 720px; /* do not exceed 720px */
+}
+.modal-ecp .modal-body {
+  max-height: 900px; /* cap height and enable scroll */
+  overflow-y: auto;
+}
+
+/* ===== Alerts ===== */
+.alert { border-radius: var(--radius-sm); border: 1px solid var(--border-strong); box-shadow: var(--shadow-sm); }
+
+/* ===== Toasts ===== */
+.toast { border-radius: var(--radius-sm); box-shadow: var(--shadow-md); }
+
+/* ===== Utilities ===== */
+.shadow-soft { box-shadow: var(--shadow-sm) !important; }
+.rounded-12 { border-radius: var(--radius) !important; }
+.rounded-16 { border-radius: var(--radius-lg) !important; }
+
+/* ===== Dashboard specifics ===== */
+#leaderboardTable tbody tr:hover {
+  background: #eef2ff;
+}
+
+/* ===== Sidebar badges (counts) alignment ===== */
+.nav-link .badge { float: none; margin-left: auto; }
+
+/* ===== Canvas container subtle border ===== */
+canvas { border-radius: var(--radius-sm); background: #fff; border: 1px solid var(--border); }
+
+/* ===== Hover states for list group items ===== */
+.list-group-item { border-color: var(--border); }
+.list-group-item-action:hover { background: #f8fafc; }
+
+/* ===== Headings sizes polish ===== */
+.h1, h1 { font-size: 1.875rem; }
+.h2, h2 { font-size: 1.5rem; }
+.h3, h3 { font-size: 1.25rem; }
+
+/* ===== Buttons spacing refinement in tables/lists ===== */
+.table .btn, .list-group .btn { padding: 0.35rem 0.6rem; }
+
+/* ===== Ensure responsive images and logos look crisp ===== */
+img { image-rendering: -webkit-optimize-contrast; }
+
+/* ===== Subtle container polish ===== */
+.container-fluid { padding-bottom: 2rem; }
+/* ===== Active states & focus-visible ===== */
+:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+
+/* ===== Small helper for banners or section headers ===== */
+  .section-header {
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+
+/* ====== Creative Additions ====== */
+/* Activity Timeline styles for existing list-group markup */
+.list-group.timeline {
+  position: relative;
+  padding-left: 1.5rem;
+}
+.list-group.timeline::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.list-group.timeline .list-group-item.timeline-item {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 0.75rem;
+  padding: 0.85rem 1rem 0.85rem 2.25rem;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+.list-group.timeline .list-group-item.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 1.15rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+.list-group.timeline .list-group-item.timeline-item:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  border-color: #e0e7ff;
+}
+
+/* CTA Gradient Button */
+.btn-cta {
+  color: #111827 !important;
+  background: linear-gradient(135deg, #fde68a 0%, #f59e0b 100%);
+  border: 0 !important;
+  box-shadow: 0 10px 20px rgba(245, 158, 11, 0.25);
+}
+.btn-cta:hover {
+  filter: brightness(0.98);
+  transform: translateY(-1px);
+}
+
+/* Card hover lift */
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Refined pill badges */
+.badge.rounded-pill {
+  padding: 0.4rem 0.65rem;
+}
+
+/* Subtle scrollbar for large horizontal tables */
+.table-responsive::-webkit-scrollbar { height: 8px; }
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 9999px;
+}
+
+/* ===== Kanban Board (Enquiry Stages) ===== */
+.kanban-board {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 20px;
+}
+
+.kanban-column {
+  min-width: 300px;
+  background-color: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 15px;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.kanban-header {
+  background: var(--brand-primary);
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 15px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kanban-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.kanban-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.card-title { font-weight: 600; margin-bottom: 8px; color: var(--text-primary); }
+.card-company { color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px; }
+.card-phone { color: var(--brand-primary); font-size: 0.85em; margin-bottom: 8px; }
+.card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+.card-date { font-size: 0.8em; color: var(--text-muted); }
+.card-salesperson { font-size: 0.8em; color: var(--text-secondary); }
+
+.stage-count { background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px; font-size: 0.85em; }
+
+/* Stage header color variants */
+.stage-enquiry_received .kanban-header { background-color: #6c757d; }
+.stage-quotation_sent .kanban-header { background-color: #06b6d4; }
+.stage-negotiation .kanban-header { background-color: #ffc107; color: #111827; }
+.stage-proforma_invoice_sent .kanban-header { background-color: #fd7e14; }
+.stage-invoice_made .kanban-header { background-color: #0d6efd; }
+.stage-invoice_sent .kanban-header { background-color: #0d6efd; }
+.stage-won .kanban-header { background-color: #28a745; }
+.stage-lost .kanban-header { background-color: #dc3545; }
+
+/* Kanban Animations */
+@keyframes slideFadeIn {
+  from { transform: translateY(-8px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes bump {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.kanban-card.animate-in { animation: slideFadeIn 300ms ease-out; }
+.stage-count.bump { animation: bump 300ms ease-out; }
+
+/* ===== Dark Mode Variables ===== */
+[data-theme="dark"] {
+  --bg-body: #0b1220;
+  --bg-card: #0f172a;
+  --bg-soft: #0b1628;
+  --text-primary: #e5e7eb;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border: #273449;
+  --border-strong: #364763;
+  --ring: rgba(99, 102, 241, 0.3);
+}
+
+/* Smooth theme transitions */
+body, .card, .sidebar, .modal-content, .table, .list-group-item, .offcanvas, .alert {
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+/* Dark mode specific surfaces */
+[data-theme="dark"] .sidebar {
+  background: linear-gradient(180deg, #0f172a 0%, #0b1220 100%);
+  border-right-color: var(--border);
+}
+[data-theme="dark"] .sidebar .nav-link { color: var(--text-secondary); }
+[data-theme="dark"] .sidebar .nav-link:hover { background: #1e293b; color: #a5b4fc; }
+[data-theme="dark"] .sidebar .nav-link.active { background: #4f46e5; color: #fff !important; }
+
+[data-theme="dark"] .card-header { background: #0f172a; border-bottom-color: var(--border); }
+[data-theme="dark"] .table thead th { background: #0b1628; border-bottom-color: var(--border); }
+[data-theme="dark"] .list-group-item { background: #0f172a; }
+[data-theme="dark"] canvas { background: #0f172a; border-color: var(--border); }
+
+/* Sticky table headers and zebra rows */
+.table-sticky thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.table-zebra tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+[data-theme="dark"] .table-zebra tbody tr:nth-child(even) {
+  background: #0b1628;
+}
+
+/* ===== Kanban Board Styles ===== */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  width: 100%;
+}
+
+.kanban-column {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0;
+  box-shadow: var(--shadow-sm);
+  height: fit-content;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.kanban-column::-webkit-scrollbar {
+  width: 6px;
+}
+
+.kanban-column::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.kanban-column::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.kanban-header {
+  background: var(--bg-soft);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.stage-count {
+  background: var(--brand-primary);
+  color: white;
+  border-radius: 9999px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.kanban-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin: 0.75rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 200ms ease;
+  cursor: pointer;
+}
+
+.kanban-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--brand-primary);
+}
+
+.card-title {
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.card-company {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-bottom: 0.25rem;
+}
+
+.card-phone {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-products {
+  margin-bottom: 0.75rem;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.card-date {
+  font-weight: 500;
+}
+
+.card-salesperson {
+  font-style: italic;
+}
+
+/* Dark mode kanban styles */
+[data-theme="dark"] .kanban-column {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .kanban-header {
+  background: var(--bg-soft);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .kanban-card {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .kanban-card:hover {
+  border-color: var(--accent);
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 1400px) {
+  .kanban-board {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .kanban-board {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .kanban-board {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .kanban-card {
+    padding: 0.75rem;
+    margin: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .kanban-board {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    padding: 0.25rem;
+  }
+
+  .kanban-card {
+    padding: 0.5rem;
+    margin: 0.25rem;
+    font-size: 0.85rem;
+  }
+
+  .card-title {
+    font-size: 0.85rem;
+  }
+
+  .card-company,
+  .card-phone {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .kanban-board {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 0.25rem;
+  }
+}

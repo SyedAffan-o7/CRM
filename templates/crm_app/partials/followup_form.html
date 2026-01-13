@@ -1,0 +1,171 @@
+<form id="followupForm" method="post" action="{% if lead and lead.id %}{% url 'crm_app:followup_create' lead.id %}{% else %}#{% endif %}" class="needs-validation" novalidate {% if not lead or not lead.id %}style="display: none;"{% endif %}>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+        {% for error in form.non_field_errors %}
+            {{ error }}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Hidden lead field -->
+    <div style="display: none;">
+        {{ form.lead }}
+        {% if form.lead.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.lead.errors|join:", " }}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="{{ form.scheduled_date.id_for_label }}" class="form-label">
+            Scheduled Date & Time <span class="text-danger">*</span>
+        </label>
+        {{ form.scheduled_date }}
+        {% if form.scheduled_date.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.scheduled_date.errors|join:", " }}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="{{ form.followup_type.id_for_label }}" class="form-label">
+            Type
+        </label>
+        {{ form.followup_type }}
+        {% if form.followup_type.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.followup_type.errors|join:", " }}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="{{ form.assigned_to.id_for_label }}" class="form-label">
+            Assign To
+        </label>
+        {{ form.assigned_to }}
+        {% if form.assigned_to.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.assigned_to.errors|join:", " }}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="{{ form.notes.id_for_label }}" class="form-label">
+            Notes
+        </label>
+        {{ form.notes }}
+        {% if form.notes.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.notes.errors|join:", " }}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancel
+        </button>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-calendar-plus me-1"></i> Schedule Follow-up
+        </button>
+    </div>
+</form>
+
+{% if not lead or not lead.id %}
+<div class="text-center text-muted py-4">
+    <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+    <p class="mt-2">Unable to create follow-up. Lead information is missing.</p>
+</div>
+{% endif %}
+
+<script>
+// Initialize form validation and AJAX submission
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('followupForm');
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Basic form validation
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+
+            // AJAX submission
+            const formData = new FormData(form);
+            const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                formData.append('csrfmiddlewaretoken', csrfToken.value);
+            }
+
+            // Get the lead ID from the URL
+            const urlParts = window.location.pathname.split('/');
+            const leadId = urlParts[urlParts.length - 2]; // Assuming URL is /enquiries/{id}/
+
+            fetch(`/followup/create/${leadId}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close modal and refresh page
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('followupModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+                    location.reload();
+                } else {
+                    // Show errors in the form
+                    displayFormErrors(form, data.errors);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while creating the follow-up.');
+            });
+        });
+    }
+
+    function displayFormErrors(form, errors) {
+        // Clear previous errors
+        form.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+        // Display new errors
+        for (const [fieldName, fieldErrors] of Object.entries(errors)) {
+            const field = form.querySelector(`[name="${fieldName}"]`);
+            if (field) {
+                field.classList.add('is-invalid');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'invalid-feedback d-block';
+                errorDiv.textContent = fieldErrors.join(', ');
+                field.parentNode.appendChild(errorDiv);
+            }
+        }
+    }
+});
+
+// Initialize datetime picker if flatpickr is available
+const scheduledDateInput = document.getElementById('{{ form.scheduled_date.id_for_label }}');
+if (scheduledDateInput && window.flatpickr) {
+    window.flatpickr(scheduledDateInput, {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        minDate: "today",
+        time_24hr: true,
+        minuteIncrement: 15
+    });
+}
+</script>

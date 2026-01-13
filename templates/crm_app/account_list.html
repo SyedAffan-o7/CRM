@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Accounts - CRM System{% endblock %}
+{% block page_title %}Accounts Management{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'crm_app:account_add' %}" class="btn btn-primary">
+    <i class="bi bi-plus-circle"></i> Add New Account
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Search -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-8">
+                <label for="search" class="form-label">Search Accounts</label>
+                <input type="text" class="form-control" id="search" name="search" value="{{ request.GET.search }}" placeholder="Company name, contact, phone...">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                <a href="{% url 'crm_app:account_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Accounts Table -->
+<div class="card">
+    <div class="card-body">
+        {% if accounts %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Company Name</th>
+                            <th>Primary Contact</th>
+                            <th>Phone</th>
+                            <th>Industry</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for account in accounts %}
+                        <tr>
+                            <td>
+                                <strong>{{ account.company_name }}</strong>
+                            </td>
+                            <td>{{ account.primary_contact|default:"-" }}</td>
+                            <td>
+                                {% if account.phone_number %}
+                                    <a
+                                        href="https://wa.me/{{ account.phone_number|cut:' '|cut:'+'|cut:'-'|cut:'('|cut:')'|cut:'.'|cut:'/' }}"
+                                        class="me-2 text-success"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Open WhatsApp chat"
+                                        aria-label="Open WhatsApp chat"
+                                    >
+                                        <i class="bi bi-whatsapp"></i>
+                                    </a>
+                                    {{ account.phone_number }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ account.industry_type|default:"-" }}</td>
+                            <td>
+                                <span class="badge bg-{% if account.account_status == 'active' %}success{% elif account.account_status == 'prospect' %}warning{% else %}secondary{% endif %}">
+                                    {{ account.get_account_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <small>{{ account.created_date|date:"M d, Y" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    {% if account.pk %}
+                                        <a href="{% url 'crm_app:account_detail' account.pk %}" class="btn btn-outline-primary btn-sm" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'crm_app:account_edit' account.pk %}" class="btn btn-outline-secondary btn-sm" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    {% else %}
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" title="No ID" disabled>
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" title="No ID" disabled>
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-building text-muted" style="font-size: 4rem;"></i>
+                <h4 class="mt-3 text-muted">No accounts found</h4>
+                <p class="text-muted">Start by adding your first account to the system.</p>
+                <a href="{% url 'crm_app:account_add' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Add New Account
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

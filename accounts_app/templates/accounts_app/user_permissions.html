@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - CRM System{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{% url 'accounts_app:user_management' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Users
+    </a>
+    <a href="{% url 'accounts_app:edit_user' user.id %}" class="btn btn-primary">
+        <i class="bi bi-pencil"></i> Edit User
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- User Information Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-person"></i> User Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="avatar avatar-lg me-3">
+                                <span class="avatar-initial bg-label-primary">{{ user.first_name|first|default:user.username|first|upper }}</span>
+                            </div>
+                            <div>
+                                <h4 class="mb-0">{{ user.get_full_name|default:user.username }}</h4>
+                                <p class="text-muted mb-0">{{ user.email }}</p>
+                                <small class="text-muted">Username: {{ user.username }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="row">
+                            <div class="col-6">
+                                <p class="mb-1"><strong>Status:</strong></p>
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-6">
+                                <p class="mb-1"><strong>Last Login:</strong></p>
+                                {% if user.last_login %}
+                                    <small>{{ user.last_login|timesince }} ago</small>
+                                {% else %}
+                                    <small class="text-muted">Never</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Role Information -->
+{% if user.profile.role %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-shield-check"></i> Role Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>{{ user.profile.role.display_name }}</h6>
+                        <p class="text-muted mb-2">{{ user.profile.role.description|default:"No description available" }}</p>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-info me-2">Level {{ user.profile.role.role_level }}</span>
+                            {% if user.profile.role.is_active %}
+                                <span class="badge bg-success">Active Role</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive Role</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Employee Details</h6>
+                        <p class="mb-1"><strong>Employee ID:</strong> {{ user.profile.employee_id|default:"Not assigned" }}</p>
+                        <p class="mb-1"><strong>Department:</strong> {{ user.profile.department|default:"Not assigned" }}</p>
+                        <p class="mb-1"><strong>Phone:</strong> {{ user.profile.phone|default:"Not provided" }}</p>
+                        <p class="mb-0"><strong>Date Joined:</strong> {{ user.profile.date_joined|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Permissions Matrix -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-key"></i> Module Permissions
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if permissions %}
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Module</th>
+                                <th class="text-center">View</th>
+                                <th class="text-center">Create</th>
+                                <th class="text-center">Edit</th>
+                                <th class="text-center">Delete</th>
+                                <th class="text-center">Import</th>
+                                <th class="text-center">Export</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for permission in permissions %}
+                            <tr>
+                                <td><strong>{{ permission.get_module_display }}</strong></td>
+                                <td class="text-center">
+                                    {% if permission.can_view %}
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    {% else %}
+                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if permission.can_create %}
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    {% else %}
+                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if permission.can_edit %}
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    {% else %}
+                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if permission.can_delete %}
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    {% else %}
+                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if permission.can_import %}
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    {% else %}
+                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if permission.can_export %}
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    {% else %}
+                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-shield-x display-4 text-muted d-block mb-2"></i>
+                    <h6 class="text-muted">No Permissions Assigned</h6>
+                    <p class="text-muted">This user has no role assigned or the role has no permissions configured.</p>
+                    <a href="{% url 'accounts_app:edit_user' user.id %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Assign Role
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accessible Modules Summary -->
+{% if accessible_modules %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-check"></i> Accessible Modules Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for module in accessible_modules %}
+                    <div class="col-md-3 col-sm-6 mb-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            <span>{{ module|title }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Permission Legend -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i> Permission Legend
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2 col-sm-4 mb-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-eye text-info me-2"></i>
+                            <small><strong>View:</strong> Can see module data</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 mb-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-plus-circle text-primary me-2"></i>
+                            <small><strong>Create:</strong> Can add new records</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 mb-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-pencil text-warning me-2"></i>
+                            <small><strong>Edit:</strong> Can modify records</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 mb-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-trash text-danger me-2"></i>
+                            <small><strong>Delete:</strong> Can remove records</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 mb-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-download text-success me-2"></i>
+                            <small><strong>Import:</strong> Can import data</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 mb-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-upload text-purple me-2"></i>
+                            <small><strong>Export:</strong> Can export data</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.avatar-initial {
+    background-color: #007bff;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.text-purple {
+    color: #6f42c1 !important;
+}
+</style>
+{% endblock %}

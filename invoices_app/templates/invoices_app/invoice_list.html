@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Invoices - AAA CRM{% endblock %}
+{% block page_title %}Invoices{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'invoices_app:invoice_add' %}" class="btn btn-primary btn-sm">New Invoice</a>
+{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2">
+      <div class="col-md-4">
+        <input type="text" name="search" value="{{ search }}" placeholder="Search by customer or invoice #" class="form-control">
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-secondary w-100">Search</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Customer</th>
+          <th>Issue Date</th>
+          <th>Status</th>
+          <th class="text-end">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for invoice in page_obj.object_list %}
+        <tr>
+          <td><a href="{% url 'invoices_app:invoice_detail' invoice.pk %}">{{ invoice.invoice_number }}</a></td>
+          <td>{{ invoice.contact.full_name }}</td>
+          <td>{{ invoice.issue_date|date:'d M Y' }}</td>
+          <td>{{ invoice.get_status_display }}</td>
+          <td class="text-end">{{ invoice.total_amount }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted">No invoices found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if page_obj.has_other_pages %}
+    <nav>
+      <ul class="pagination justify-content-end">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search }}">Previous</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Previous</span></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search }}">Next</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Next</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,626 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Outbound - AAA CRM{% endblock %}
+{% block page_title %}Outbound{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/outbound.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Outbound Activities</h5>
+      <div class="d-flex align-items-center gap-3">
+        <div class="btn-group">
+          <a href="{% url 'outbound_app:outbound_add' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add New Activity
+          </a>
+          <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+            <span class="visually-hidden">Toggle Dropdown</span>
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{% url 'outbound_app:outbound_add' %}">
+              <i class="bi bi-gear"></i> Advanced Form
+            </a></li>
+            <li><a class="dropdown-item" href="{% url 'outbound_app:outbound_add' %}?simple=1">
+              <i class="bi bi-lightning"></i> Simple Form
+            </a></li>
+          </ul>
+        </div>
+        <div id="outbound-status" class="text-muted small"></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <!-- Filters -->
+      <form id="filters-form" class="row g-2 align-items-end mb-3">
+        <div class="col-md-3">
+          <label for="f-contact" class="form-label mb-0">Contact</label>
+          <input type="text" id="f-contact" class="form-control" placeholder="Contact name">
+        </div>
+        <div class="col-md-3">
+          <label for="f-campaign" class="form-label mb-0">Campaign</label>
+          <input type="text" id="f-campaign" class="form-control" placeholder="Campaign name">
+        </div>
+        <div class="col-md-2">
+          <label for="f-method" class="form-label mb-0">Method</label>
+          <select id="f-method" class="form-select">
+            <option value="">Any</option>
+            <option value="PHONE">Phone</option>
+            <option value="WHATSAPP">WhatsApp</option>
+            <option value="EMAIL">Email</option>
+            <option value="MEETING">Meeting</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="f-status" class="form-label mb-0">Status</label>
+          <select id="f-status" class="form-select">
+            <option value="">Any</option>
+            <option value="CONTACTED">Contacted</option>
+            <option value="NOT CONTACTED">Not Contacted</option>
+            <option value="CONVERTED">Converted</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="f-salesperson" class="form-label mb-0">Salesperson</label>
+          <input type="text" id="f-salesperson" class="form-control" placeholder="username">
+        </div>
+        <div class="col-md-2">
+          <label for="f-date-from" class="form-label mb-0">Date From</label>
+          <input type="date" id="f-date-from" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <label for="f-date-to" class="form-label mb-0">Date To</label>
+          <input type="date" id="f-date-to" class="form-control">
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-funnel"></i> Apply</button>
+          <button type="button" id="btn-clear" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Clear</button>
+        </div>
+        <div class="col-12 mt-2 d-flex justify-content-between align-items-center">
+          <a id="btn-export" href="#" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-spreadsheet"></i> Export CSV</a>
+          <small class="text-muted">💡 Click customer names for 360° view | Ctrl+Click for full page</small>
+        </div>
+      </form>
+
+      <!-- Loading state -->
+      <div id="outbound-loading" class="text-center py-4">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="mt-2">Loading outbound records…</div>
+      </div>
+
+      <!-- Empty state -->
+      <div id="outbound-empty" class="text-center py-4 d-none">
+        <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
+        <p class="text-muted mt-2 mb-0">No outbound records yet.</p>
+      </div>
+
+      <!-- Error (non-blocking) -->
+      <div id="outbound-error" class="alert alert-warning d-none" role="alert">
+        Failed to load data. Showing empty state.
+      </div>
+
+      <!-- Data table -->
+      <div class="table-responsive d-none" id="outbound-table-wrap">
+        <table class="table table-bordered table-hover align-middle mb-0" id="outbound-table">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Customer</th>
+              <th scope="col">Last Contacted</th>
+              <th scope="col">Method</th>
+              <th scope="col">Summary</th>
+              <th scope="col">Next Step</th>
+              <th scope="col">Salesperson</th>
+              <th scope="col">Status</th>
+              <th scope="col">Time</th>
+              <th scope="col" style="width: 240px;">Actions</th>
+              <th scope="col">Lead</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  const API_URL = '{% url "outbound_app:outbound-list-api" %}';
+  const EXPORT_URL = '{% url "outbound_app:outbound-export-csv" %}';
+  const loadingEl = document.getElementById('outbound-loading');
+  const emptyEl = document.getElementById('outbound-empty');
+  const errorEl = document.getElementById('outbound-error');
+  const tableWrapEl = document.getElementById('outbound-table-wrap');
+  const tbodyEl = document.querySelector('#outbound-table tbody');
+  const statusEl = document.getElementById('outbound-status');
+
+  // Filters
+  const formEl = document.getElementById('filters-form');
+  const fContact = document.getElementById('f-contact');
+  const fCampaign = document.getElementById('f-campaign');
+  const fMethod = document.getElementById('f-method');
+  const fStatus = document.getElementById('f-status');
+  const fSalesperson = document.getElementById('f-salesperson');
+  const fDateFrom = document.getElementById('f-date-from');
+  const fDateTo = document.getElementById('f-date-to');
+  const btnClear = document.getElementById('btn-clear');
+  const btnExport = document.getElementById('btn-export');
+
+  function setState(state) {
+    // states: loading | empty | table
+    loadingEl.classList.toggle('d-none', state !== 'loading');
+    emptyEl.classList.toggle('d-none', state !== 'empty');
+    tableWrapEl.classList.toggle('d-none', state !== 'table');
+  }
+
+  function setError(visible, message) {
+    errorEl.classList.toggle('d-none', !visible);
+    if (message) errorEl.textContent = message;
+  }
+
+  function statusBadgeClass(statusText) {
+    const s = (statusText || '').toLowerCase();
+    if (s.includes('converted')) return 'bg-success';
+    if (s.includes('contacted') && !s.includes('not')) return 'bg-primary';
+    if (s.includes('not')) return 'bg-warning text-dark';
+    return 'bg-secondary';
+  }
+
+  function renderRows(records) {
+    tbodyEl.innerHTML = '';
+    for (const rec of records) {
+      const tr = document.createElement('tr');
+
+      const tdCustomer = document.createElement('td');
+      // Hover action popup anchored to customer name
+      const container = document.createElement('div');
+      container.className = 'hover-card-container';
+      const trigger = document.createElement('span');
+      trigger.className = 'hover-trigger';
+      const nameLink = document.createElement('a');
+      if (rec.contact_id) {
+        nameLink.href = '/outbound/customer/' + encodeURIComponent(rec.contact_id) + '/';
+        // Add drawer option
+        nameLink.setAttribute('data-contact-id', rec.contact_id);
+        nameLink.setAttribute('data-drawer-toggle', 'true');
+        nameLink.addEventListener('click', function(e) {
+          if (e.ctrlKey || e.metaKey) {
+            // Allow normal link behavior with Ctrl/Cmd+click
+            return;
+          }
+          e.preventDefault();
+          loadCustomerDrawer(rec.contact_id);
+        });
+      } else {
+        nameLink.href = '#';
+      }
+      nameLink.textContent = rec.customer || '-';
+      trigger.appendChild(nameLink);
+      const card = document.createElement('div');
+      card.className = 'hover-card shadow-sm';
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+
+      // Call
+      if (rec.phone) {
+        const btnCall = document.createElement('a');
+        btnCall.className = 'btn btn-outline-primary';
+        btnCall.title = 'Call';
+        btnCall.setAttribute('data-action', 'comm');
+        btnCall.setAttribute('data-method', 'PHONE');
+        if (rec.contact_id) btnCall.setAttribute('data-contact-id', rec.contact_id);
+        btnCall.setAttribute('data-contact-name', rec.customer || '');
+        btnCall.setAttribute('data-phone', rec.phone || '');
+        btnCall.innerHTML = '<i class="bi bi-whatsapp"></i>';
+        actions.appendChild(btnCall);
+      }
+
+      // WhatsApp (fallback to phone if whatsapp not provided)
+      if (rec.phone) {
+        const btnWa = document.createElement('a');
+        btnWa.className = 'btn btn-outline-success';
+        btnWa.title = 'WhatsApp';
+        btnWa.setAttribute('data-action', 'comm');
+        btnWa.setAttribute('data-method', 'WHATSAPP');
+        if (rec.contact_id) btnWa.setAttribute('data-contact-id', rec.contact_id);
+        btnWa.setAttribute('data-contact-name', rec.customer || '');
+        btnWa.setAttribute('data-phone', rec.phone || '');
+        btnWa.setAttribute('data-whatsapp', rec.phone || '');
+        btnWa.innerHTML = '<i class="bi bi-whatsapp"></i>';
+        actions.appendChild(btnWa);
+      }
+
+      // Log Activity
+      if (rec.contact_id) {
+        const btnLog = document.createElement('a');
+        btnLog.className = 'btn btn-outline-dark';
+        btnLog.title = 'Log Activity';
+        btnLog.setAttribute('data-action', 'comm');
+        btnLog.setAttribute('data-method', 'PHONE');
+        btnLog.setAttribute('data-contact-id', rec.contact_id);
+        btnLog.setAttribute('data-contact-name', rec.customer || '');
+        btnLog.setAttribute('data-phone', rec.phone || '');
+        btnLog.innerHTML = '<i class="bi bi-plus-circle"></i>';
+        actions.appendChild(btnLog);
+      }
+
+      // Create Enquiry
+      if (rec.contact_id) {
+        const btnEnq = document.createElement('button');
+        btnEnq.type = 'button';
+        btnEnq.className = 'btn btn-outline-info';
+        btnEnq.title = 'Create Enquiry';
+        btnEnq.innerHTML = '<i class="bi bi-person-plus-fill"></i>';
+        btnEnq.addEventListener('click', async () => {
+          try {
+            const res = await fetch('/api/activities/create-enquiry/', { // fixed path
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': (typeof csrftoken !== 'undefined' ? csrftoken : ''),
+              },
+              body: JSON.stringify({ contact: rec.contact_id })
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            const leadId = data && data.id;
+            if (leadId) {
+              window.location.href = '/enquiries/' + encodeURIComponent(leadId) + '/';
+            }
+          } catch (e) {
+            alert('Failed to create enquiry.');
+          }
+        });
+        actions.appendChild(btnEnq);
+      }
+
+      // Timeline (with drawer option)
+      if (rec.contact_id) {
+        const btnTl = document.createElement('button');
+        btnTl.className = 'btn btn-outline-secondary';
+        btnTl.title = 'Customer 360° View';
+        btnTl.innerHTML = '<i class="bi bi-person-circle"></i>';
+        btnTl.addEventListener('click', () => loadCustomerDrawer(rec.contact_id));
+        actions.appendChild(btnTl);
+      }
+
+      card.appendChild(actions);
+      container.appendChild(trigger);
+      container.appendChild(card);
+      tdCustomer.appendChild(container);
+
+      const tdLast = document.createElement('td');
+      try {
+        const ld = rec.last_contacted ? new Date(rec.last_contacted) : null;
+        tdLast.textContent = (ld && !isNaN(ld)) ? ld.toLocaleString() : '-';
+      } catch (_) {
+        tdLast.textContent = '-';
+      }
+
+      const tdMethod = document.createElement('td');
+      tdMethod.textContent = rec.method || '-';
+
+      const tdSummary = document.createElement('td');
+      tdSummary.textContent = rec.summary || '-';
+
+      const tdNext = document.createElement('td');
+      tdNext.textContent = rec.next_step || '-';
+
+      const tdSales = document.createElement('td');
+      tdSales.textContent = rec.salesperson || '-';
+
+      const tdStatus = document.createElement('td');
+      const badge = document.createElement('span');
+      badge.className = 'badge ' + statusBadgeClass(rec.status);
+      badge.textContent = rec.status || 'Unknown';
+      tdStatus.appendChild(badge);
+
+      const tdTime = document.createElement('td');
+      try {
+        const d = new Date(rec.time);
+        tdTime.textContent = isNaN(d) ? '-' : d.toLocaleString();
+      } catch (e) {
+        tdTime.textContent = '-';
+      }
+
+      const tdActions = document.createElement('td');
+      tdActions.className = 'd-flex gap-2 flex-wrap';
+
+      // Call
+      if (rec.phone) {
+        const callBtn = document.createElement('a');
+        callBtn.className = 'btn btn-sm btn-outline-secondary';
+        callBtn.href = 'tel:' + encodeURIComponent(rec.phone);
+        callBtn.textContent = 'Call';
+        tdActions.appendChild(callBtn);
+      }
+
+      // Log Activity
+      if (rec.contact_id) {
+        const logBtn = document.createElement('a');
+        logBtn.className = 'btn btn-sm btn-outline-primary';
+        logBtn.href = '/outbound/activity/log/' + encodeURIComponent(rec.contact_id) + '/';
+        logBtn.textContent = 'Log Activity';
+        tdActions.appendChild(logBtn);
+      }
+
+      // New Enquiry button in actions column (kept)
+      if (rec.contact_id) {
+        const enquiryBtn = document.createElement('button');
+        enquiryBtn.type = 'button';
+        enquiryBtn.className = 'btn btn-sm btn-success';
+        enquiryBtn.textContent = 'New Enquiry';
+        enquiryBtn.addEventListener('click', async () => {
+          try {
+            const res = await fetch('/api/activities/create-enquiry/', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': (typeof csrftoken !== 'undefined' ? csrftoken : ''),
+              },
+              body: JSON.stringify({ contact: rec.contact_id })
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            const leadId = data && data.id;
+            if (leadId) {
+              window.location.href = '/enquiries/' + encodeURIComponent(leadId) + '/';
+            }
+          } catch (e) {
+            alert('Failed to create enquiry.');
+          }
+        });
+        tdActions.appendChild(enquiryBtn);
+      }
+
+      // View Outbound record
+      const viewBtn = document.createElement('a');
+      viewBtn.className = 'btn btn-sm btn-outline-dark';
+      viewBtn.textContent = 'View';
+      if (rec._id !== undefined && rec._id !== null) {
+        viewBtn.href = '/outbound/' + encodeURIComponent(rec._id) + '/';
+      } else {
+        viewBtn.href = '#';
+      }
+      tdActions.appendChild(viewBtn);
+
+      const tdLead = document.createElement('td');
+      if (rec.lead) {
+        // Show lead contact_name from API; simple text to avoid coupling to URL structure
+        tdLead.textContent = rec.lead;
+      } else {
+        tdLead.textContent = '-';
+      }
+
+      tr.appendChild(tdCustomer);
+      tr.appendChild(tdLast);
+      tr.appendChild(tdMethod);
+      tr.appendChild(tdSummary);
+      tr.appendChild(tdNext);
+      tr.appendChild(tdSales);
+      tr.appendChild(tdStatus);
+      tr.appendChild(tdTime);
+      tr.appendChild(tdActions);
+      tr.appendChild(tdLead);
+      tbodyEl.appendChild(tr);
+    }
+  }
+
+  function buildQuery() {
+    const params = new URLSearchParams();
+    if (fContact.value.trim()) params.set('contact', fContact.value.trim());
+    if (fCampaign.value.trim()) params.set('campaign', fCampaign.value.trim());
+    if (fMethod.value) params.set('method', fMethod.value);
+    if (fStatus.value) params.set('status', fStatus.value);
+    if (fSalesperson.value.trim()) params.set('salesperson', fSalesperson.value.trim());
+    if (fDateFrom.value) params.set('date_from', fDateFrom.value);
+    if (fDateTo.value) params.set('date_to', fDateTo.value);
+    return params;
+  }
+
+  function updateExportLink() {
+    const qs = buildQuery().toString();
+    btnExport.href = EXPORT_URL + (qs ? ('?' + qs) : '');
+  }
+
+  async function fetchOutbound(withParams=true) {
+    setState('loading');
+    setError(false);
+    statusEl.textContent = '';
+    try {
+      const qs = withParams ? buildQuery().toString() : '';
+      const url = API_URL + (qs ? ('?' + qs) : '');
+      updateExportLink();
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) {
+        throw new Error('HTTP ' + res.status);
+      }
+      const data = await res.json();
+      const records = Array.isArray(data) ? data : [];
+      if (records.length === 0) {
+        setState('empty');
+        statusEl.textContent = '0 records';
+      } else {
+        renderRows(records);
+        setState('table');
+        statusEl.textContent = records.length + ' record' + (records.length === 1 ? '' : 's');
+      }
+    } catch (err) {
+      console.error('Failed to fetch outbound data:', err);
+      setError(true, 'Failed to load data. Showing empty state.');
+      setState('empty');
+      statusEl.textContent = '';
+    }
+  }
+
+  // Prefill filters from URL (optional deep-linking)
+  function applyQueryFromLocation() {
+    const url = new URL(window.location.href);
+    const p = url.searchParams;
+    if (p.has('contact')) fContact.value = p.get('contact');
+    if (p.has('campaign')) fCampaign.value = p.get('campaign');
+    if (p.has('method')) fMethod.value = p.get('method');
+    if (p.has('status')) fStatus.value = p.get('status');
+    if (p.has('salesperson')) fSalesperson.value = p.get('salesperson');
+    if (p.has('date_from')) fDateFrom.value = p.get('date_from');
+    if (p.has('date_to')) fDateTo.value = p.get('date_to');
+  }
+
+  formEl.addEventListener('submit', function(e) {
+    e.preventDefault();
+    // Update browser URL with current filters
+    const qs = buildQuery().toString();
+    const newUrl = window.location.pathname + (qs ? ('?' + qs) : '');
+    window.history.replaceState({}, '', newUrl);
+    fetchOutbound(true);
+  });
+
+  btnClear.addEventListener('click', function() {
+    fContact.value = '';
+    fCampaign.value = '';
+    fMethod.value = '';
+    fStatus.value = '';
+    fSalesperson.value = '';
+    fDateFrom.value = '';
+    fDateTo.value = '';
+    window.history.replaceState({}, '', window.location.pathname);
+    fetchOutbound(false);
+  });
+
+  // Customer Drawer functionality
+  async function loadCustomerDrawer(contactId) {
+    try {
+      const response = await fetch(`/outbound/customer/${contactId}/drawer/`);
+      if (!response.ok) throw new Error('Failed to load customer data');
+      
+      const html = await response.text();
+      
+      // Remove existing drawer if any
+      const existingDrawer = document.getElementById('customerDrawer');
+      if (existingDrawer) {
+        existingDrawer.remove();
+      }
+      
+      // Add new drawer to body
+      document.body.insertAdjacentHTML('beforeend', html);
+      
+      // Initialize and show drawer
+      const drawer = new bootstrap.Offcanvas(document.getElementById('customerDrawer'));
+      drawer.show();
+      
+      // Attach event handlers for the drawer content
+      attachHandlers(document.getElementById('customerDrawer'));
+      
+    } catch (error) {
+      console.error('Error loading customer drawer:', error);
+      // Fallback to full page
+      window.location.href = `/outbound/customer/${contactId}/`;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    applyQueryFromLocation();
+    fetchOutbound(true);
+  });
+})();
+</script>
+<!-- Log Activity Modal (reused) -->
+<div class="modal fade" id="logActivityModal" tabindex="-1" aria-labelledby="logActivityTitle" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="logActivityTitle">Log Activity</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-end mb-3">
+          <a id="openCommBtn" href="#" target="_blank" class="btn btn-outline-primary">
+            <i id="openCommIcon" class="bi bi-whatsapp me-1"></i> Open
+          </a>
+        </div>
+        <form id="logActivityForm" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="contact" value="">
+          <div class="row g-3 align-items-end mb-2">
+            <div class="col-md-6">
+              <label class="form-label">Template (optional)</label>
+              <select id="templateSelect" class="form-select">
+                <option value="">-- No template --</option>
+              </select>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Method</label>
+              <select name="method" class="form-select" required>
+                <option value="PHONE">Phone Call</option>
+                <option value="WHATSAPP">WhatsApp</option>
+                <option value="EMAIL">Email</option>
+                <option value="SMS">SMS</option>
+                <option value="MEETING">In-Person Meeting</option>
+                <option value="VIDEO_CALL">Video Call</option>
+                <option value="LINKEDIN">LinkedIn Message</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Outcome</label>
+              <select name="outcome" class="form-select">
+                <option value="">-- Select --</option>
+                <option value="POSITIVE">Positive</option>
+                <option value="NEUTRAL">Neutral</option>
+                <option value="NEGATIVE">Negative</option>
+                <option value="NO_RESPONSE">No Response</option>
+                <option value="CALLBACK_REQUESTED">Callback Requested</option>
+                <option value="NOT_INTERESTED">Not Interested</option>
+                <option value="INTERESTED">Showed Interest</option>
+                <option value="MEETING_SCHEDULED">Meeting Scheduled</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Next Step</label>
+              <select name="next_step" class="form-select">
+                <option value="NONE">None</option>
+                <option value="FOLLOW_UP">Schedule Follow-up</option>
+                <option value="SEND_CATALOGUE">Send Product Catalogue</option>
+                <option value="SEND_QUOTE">Send Quotation</option>
+                <option value="SEND_PROPOSAL">Send Proposal</option>
+                <option value="SCHEDULE_DEMO">Schedule Product Demo</option>
+                <option value="SCHEDULE_MEETING">Schedule Meeting</option>
+                <option value="CREATE_ENQUIRY">Create Enquiry</option>
+                <option value="CONVERT_LEAD">Convert to Lead</option>
+                <option value="CLOSE_WON">Mark as Won</option>
+                <option value="CLOSE_LOST">Mark as Lost</option>
+              </select>
+            </div>
+            <div class="col-md-12">
+              <label class="form-label">Summary</label>
+              <textarea name="summary" class="form-control" rows="3" placeholder="Summary of conversation"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Next Step Date</label>
+              <input type="datetime-local" name="next_step_date" class="form-control" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Follow-up Reminder</label>
+              <input type="datetime-local" name="follow_up_reminder" class="form-control" />
+            </div>
+          </div>
+          <div class="mt-3 d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Activity</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="{% static 'js/outbound.js' %}"></script>
+{% endblock %}

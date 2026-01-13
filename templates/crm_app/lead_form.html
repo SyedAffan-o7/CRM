@@ -1,0 +1,1809 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - CRM System{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'crm_app:lead_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Back to Enquiries
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <style>
+                    .country-code-wrapper {
+                        position: relative;
+                        flex: 0 0 120px;
+                        max-width: 120px;
+                    }
+                    .country-code-wrapper .cc-expanded {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        z-index: 1050;
+                    }
+                    #country_code,
+                    #country_code option {
+                        font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Symbol", sans-serif;
+                    }
+                    .image-dropzone {
+                        border: 1px dashed #ced4da;
+                        border-radius: 0.5rem;
+                        padding: 0.75rem;
+                        cursor: pointer;
+                        background: #fff;
+                        transition: border-color 0.15s ease, background-color 0.15s ease;
+                        min-height: 44px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        gap: 0.75rem;
+                    }
+                    .image-dropzone.is-dragover {
+                        border-color: #0d6efd;
+                        background: rgba(13, 110, 253, 0.05);
+                    }
+                    .image-dropzone .image-dropzone-text {
+                        font-size: 0.875rem;
+                        color: #6c757d;
+                    }
+                    .image-dropzone .image-dropzone-filename {
+                        font-size: 0.75rem;
+                        color: #6c757d;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        max-width: 220px;
+                    }
+                    .image-dropzone .image-dropzone-preview {
+                        width: 48px;
+                        height: 48px;
+                        object-fit: cover;
+                        border-radius: 0.5rem;
+                        border: 1px solid #e9ecef;
+                        background: #f8f9fa;
+                        flex: 0 0 auto;
+                    }
+                    /* Limit country code dropdown height and enable scroll for long lists */
+                    #countryCodeMenu {
+                        max-height: 340px;
+                        overflow: hidden;
+                    }
+                    #countryCodeList {
+                        max-height: 260px;
+                        overflow-y: auto;
+                    }
+                </style>
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger mb-4">
+                        <h6 class="alert-heading mb-2">Please correct the following errors:</h6>
+                        <ul class="mb-0">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Contact Information Section -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.contact_name.id_for_label }}" class="form-label fw-semibold">Contact Name *</label>
+                                {{ form.contact_name }}
+                                {% if form.contact_name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.contact_name.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.phone_number.id_for_label }}" class="form-label fw-semibold">Phone Number *</label>
+                                <div class="input-group">
+                                    <div class="country-code-wrapper">
+                                        <div class="dropdown w-100">
+                                            <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start d-flex align-items-center justify-content-between" type="button" id="countryCodeBtn" aria-expanded="false">
+                                                <span class="d-flex align-items-center gap-2">
+                                                    <img id="countryCodeBtnFlag" src="https://flagcdn.com/16x12/ae.png" width="16" height="12" alt="AE">
+                                                    <span id="countryCodeBtnText">+971</span>
+                                                </span>
+                                            </button>
+                                            <ul class="dropdown-menu w-100" id="countryCodeMenu" aria-labelledby="countryCodeBtn">
+                                                <li class="px-2 py-1">
+                                                    <input type="text" class="form-control form-control-sm" id="countryCodeSearch" placeholder="Search code (e.g. +91)" autocomplete="off">
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <div id="countryCodeList"></div>
+                                            </ul>
+                                            <input type="hidden" id="country_code" value="+971">
+                                        </div>
+                                    </div>
+                                    {{ form.phone_number }}
+                                </div>
+                                {% if form.phone_number.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.phone_number.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.company_name.id_for_label }}" class="form-label fw-semibold">Company Name</label>
+                                {{ form.company_name }}
+                                {% if form.company_name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.company_name.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.lead_source.id_for_label }}" class="form-label fw-semibold">Lead Source</label>
+                                {{ form.lead_source }}
+                                {% if form.lead_source.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.lead_source.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Enquiry Details Section -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.enquiry_stage.id_for_label }}" class="form-label fw-semibold">Enquiry Stage</label>
+                                {{ form.enquiry_stage }}
+                                {% if form.enquiry_stage.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.enquiry_stage.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.assigned_sales_person.id_for_label }}" class="form-label fw-semibold">Assigned Sales Person</label>
+                                {{ form.assigned_sales_person }}
+                                {% if form.assigned_sales_person.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.assigned_sales_person.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if user.is_superuser %}
+                                    <small class="form-text text-muted">Select the salesperson to assign this enquiry to</small>
+                                {% else %}
+                                    <small class="form-text text-muted">This enquiry will be assigned to you automatically</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Fields Section (shown/hidden based on enquiry stage) -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6" id="proforma_invoice_field" style="display: none;">
+                            <div class="mb-3">
+                                <label for="{{ form.proforma_invoice_number.id_for_label }}" class="form-label fw-semibold">Proforma Invoice Number *</label>
+                                {{ form.proforma_invoice_number }}
+                                {% if form.proforma_invoice_number.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.proforma_invoice_number.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Required when stage is 'Proforma Invoice Sent'</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6" id="invoice_field" style="display: none;">
+                            <div class="mb-3">
+                                <label for="{{ form.invoice_number.id_for_label }}" class="form-label fw-semibold">Invoice Number *</label>
+                                {{ form.invoice_number }}
+                                {% if form.invoice_number.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.invoice_number.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Required when stage is 'Invoice Sent'</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6" id="invoice_date_field" style="display: none;">
+                            <div class="mb-3">
+                                <label for="{{ form.invoice_date.id_for_label }}" class="form-label fw-semibold">Invoice Date</label>
+                                {{ form.invoice_date }}
+                                {% if form.invoice_date.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.invoice_date.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6" id="invoice_amount_field" style="display: none;">
+                            <div class="mb-3">
+                                <label for="{{ form.invoice_amount.id_for_label }}" class="form-label fw-semibold">Invoice Amount</label>
+                                {{ form.invoice_amount }}
+                                {% if form.invoice_amount.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.invoice_amount.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6" id="invoice_status_field" style="display: none;">
+                            <div class="mb-3">
+                                <label for="{{ form.invoice_status.id_for_label }}" class="form-label fw-semibold">Invoice Status</label>
+                                {{ form.invoice_status }}
+                                {% if form.invoice_status.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.invoice_status.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category & Product Information Section -->
+                    <div class="card mb-4 shadow-sm" style="background-color: #f8f9fa; border: 1px solid #e9ecef;">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                            <h6 class="mb-0 text-primary fw-semibold">📦 Category & Product Information</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="product-entry border rounded p-3 mb-3 bg-white">
+                                
+                                
+                                <div id="productContainer" class="row g-3">
+                                    {% if lead and lead.lead_products.exists %}
+                                        {% for lp in lead.lead_products.all %}
+                                        <div class="product-item border-bottom mb-3 pb-3" data-index="{{ forloop.counter0 }}">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <small class="text-muted fw-semibold">Product Entry {{ forloop.counter }}</small>
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-product-btn">
+                                                    <i class="bi bi-trash"></i> Remove
+                                                </button>
+                                            </div>
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Category</label>
+                                                        <select name="categories_text[]" class="form-control category-combo">
+                                                            {% if lp.category %}
+                                                                <option value="{{ lp.category.name }}" selected>{{ lp.category.name }}</option>
+                                                            {% else %}
+                                                                <option></option>
+                                                            {% endif %}
+                                                            {% for category in categories %}
+                                                                <option value="{{ category.name }}">{{ category.name }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                        <div class="form-text">Pick from list or type a new name to create.</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Product Image</label>
+                                                        <input type="hidden" name="lead_product_ids[]" value="{{ lp.id }}">
+                                                        <div class="image-dropzone" role="button" tabindex="0">
+                                                            <span class="image-dropzone-text">Drag &amp; drop or click to select</span>
+                                                            <span class="image-dropzone-filename d-none"></span>
+                                                            <img class="image-dropzone-preview d-none" alt="">
+                                                            <input type="file" name="product_images_{{ forloop.counter0 }}" class="visually-hidden product-image-input" accept="image/*">
+                                                        </div>
+                                                        {% if lp.image %}
+                                                            <small class="text-muted">Current: {{ lp.image.name }}</small>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Quantity</label>
+                                                        <input type="number" name="quantities[]" class="form-control" placeholder="Enter quantity" min="1" value="{{ lp.quantity }}">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Price</label>
+                                                        <input type="number" name="prices[]" class="form-control" placeholder="Enter price" step="0.01" min="0" value="{{ lp.price }}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="product-attributes mt-2">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary toggle-attributes-btn" onclick="(function(btn){var body=btn.closest('.product-attributes').querySelector('.attributes-body');if(!body)return;var hidden=body.classList.contains('d-none');if(hidden){body.classList.remove('d-none');btn.textContent='Hide Attributes';}else{body.classList.add('d-none');btn.textContent='Show Attributes';}})(this);">
+                                                    Show Attributes
+                                                </button>
+                                                <div class="attributes-body d-none mt-2">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-4 attr-field attr-size d-none">
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-semibold">Size</label>
+                                                                <input type="text" name="attr_size[]" class="form-control" list="size-options" value="{{ lp.size }}">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4 attr-field attr-color d-none">
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-semibold">Color</label>
+                                                                <input type="text" name="attr_color[]" class="form-control" list="color-options" value="{{ lp.color }}">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4 attr-field attr-model d-none">
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-semibold">Model</label>
+                                                                <input type="text" name="attr_model[]" class="form-control" list="model-options" value="{{ lp.model }}">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4 attr-field attr-brand d-none">
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-semibold">Brand</label>
+                                                                <input type="text" name="attr_brand[]" class="form-control" list="brand-options" value="{{ lp.brand }}">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4 attr-field attr-ankle d-none">
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-semibold">Ankle</label>
+                                                                <input type="text" name="attr_ankle[]" class="form-control" list="ankle-options" value="{{ lp.ankle }}">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4 attr-field attr-material d-none">
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-semibold">Material</label>
+                                                                <input type="text" name="attr_material[]" class="form-control" list="material-options" value="{{ lp.material }}">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4 attr-field attr-people d-none">
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-semibold">People / Capacity</label>
+                                                                <input type="text" name="attr_people[]" class="form-control" list="people-options" value="{{ lp.people }}">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                    <!-- Default product entry for new leads or when no products exist -->
+                    <div class="product-item border-bottom mb-3 pb-3" data-index="0">
+                                        
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <small class="text-muted fw-semibold">Product Entry 1</small>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold">Category</label>
+                                                    <select name="categories_text[]" class="form-control category-combo">
+                                                        <option></option>
+                                                        {% for category in categories %}
+                                                            <option value="{{ category.name }}">{{ category.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                    <div class="form-text">Pick from list or type a new name to create.</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold">Product Image</label>
+                                                    <div class="image-dropzone" role="button" tabindex="0">
+                                                        <span class="image-dropzone-text">Drag &amp; drop or click to select</span>
+                                                        <span class="image-dropzone-filename d-none"></span>
+                                                        <img class="image-dropzone-preview d-none" alt="">
+                                                        <input type="file" name="product_images_0" class="visually-hidden product-image-input" accept="image/*">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold">Quantity</label>
+                                                    <input type="number" name="quantities[]" class="form-control" placeholder="Enter quantity" min="1">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold">Price</label>
+                                                    <input type="number" name="prices[]" class="form-control" placeholder="Enter price" step="0.01" min="0">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="product-attributes mt-2">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary toggle-attributes-btn" onclick="(function(btn){var body=btn.closest('.product-attributes').querySelector('.attributes-body');if(!body)return;var hidden=body.classList.contains('d-none');if(hidden){body.classList.remove('d-none');btn.textContent='Hide Attributes';}else{body.classList.add('d-none');btn.textContent='Show Attributes';}})(this);">
+                                                Show Attributes
+                                            </button>
+                                            <div class="attributes-body d-none mt-2">
+                                                <div class="row g-3">
+                                                    <div class="col-md-4 attr-field attr-size d-none">
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-semibold">Size</label>
+                                                            <input type="text" name="attr_size[]" class="form-control" list="size-options">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4 attr-field attr-color d-none">
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-semibold">Color</label>
+                                                            <input type="text" name="attr_color[]" class="form-control" list="color-options">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4 attr-field attr-model d-none">
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-semibold">Model</label>
+                                                            <input type="text" name="attr_model[]" class="form-control" list="model-options">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4 attr-field attr-brand d-none">
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-semibold">Brand</label>
+                                                            <input type="text" name="attr_brand[]" class="form-control" list="brand-options">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4 attr-field attr-ankle d-none">
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-semibold">Ankle</label>
+                                                            <input type="text" name="attr_ankle[]" class="form-control" list="ankle-options">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4 attr-field attr-material d-none">
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-semibold">Material</label>
+                                                            <input type="text" name="attr_material[]" class="form-control" list="material-options">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4 attr-field attr-people d-none">
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-semibold">People / Capacity</label>
+                                                            <input type="text" name="attr_people[]" class="form-control" list="people-options">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex justify-content-end pt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="addProductBtn">
+                                        <i class="bi bi-plus-circle"></i> Add Product
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Information Section -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.next_action.id_for_label }}" class="form-label fw-semibold">Next Action</label>
+                                {{ form.next_action }}
+                                {% if form.next_action.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.next_action.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label fw-semibold">Notes</label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.notes.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-end gap-3 pt-3 border-top">
+                        <a href="{% url 'crm_app:lead_list' %}" class="btn btn-outline-secondary px-4 py-2">
+                            <i class="bi bi-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 py-2" id="submitBtn">
+                            <i class="bi bi-check-circle me-2"></i>Save Enquiry
+                        </button>
+                    </div>
+                    
+                    <script>
+                    // Form validation
+                    document.getElementById('submitBtn').addEventListener('click', function(e) {
+                        const form = document.querySelector('form');
+                        const requiredFields = form.querySelectorAll('[required]');
+                        let isValid = true;
+                        
+                        // Reset previous validation states
+                        form.querySelectorAll('.is-invalid').forEach(field => {
+                            field.classList.remove('is-invalid');
+                        });
+                        form.querySelectorAll('.invalid-feedback').forEach(feedback => {
+                            feedback.style.display = 'none';
+                        });
+                        
+                        // Check required fields
+                        requiredFields.forEach(field => {
+                            if (!field.value.trim()) {
+                                field.classList.add('is-invalid');
+                                const feedback = field.parentNode.querySelector('.invalid-feedback') || 
+                                               field.parentNode.parentNode.querySelector('.invalid-feedback');
+                                if (feedback) {
+                                    feedback.textContent = 'This field is required.';
+                                    feedback.style.display = 'block';
+                                }
+                                isValid = false;
+                            }
+                        });
+                        
+                        // Check contact name minimum length
+                        const contactNameField = document.querySelector('input[name="contact_name"]');
+                        if (contactNameField && contactNameField.value.trim().length < 2) {
+                            contactNameField.classList.add('is-invalid');
+                            const feedback = contactNameField.parentNode.querySelector('.invalid-feedback') || 
+                                           contactNameField.parentNode.parentNode.querySelector('.invalid-feedback');
+                            if (feedback) {
+                                feedback.textContent = 'Contact name must be at least 2 characters.';
+                                feedback.style.display = 'block';
+                            }
+                            isValid = false;
+                        }
+                        
+                        if (!isValid) {
+                            e.preventDefault();
+                            // Scroll to first error
+                            const firstError = form.querySelector('.is-invalid');
+                            if (firstError) {
+                                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                            return false;
+                        }
+                    });
+                    
+                    // Real-time validation
+                    document.querySelectorAll('input[required], select[required]').forEach(field => {
+                        field.addEventListener('blur', function() {
+                            if (this.hasAttribute('required') && !this.value.trim()) {
+                                this.classList.add('is-invalid');
+                                const feedback = this.parentNode.querySelector('.invalid-feedback') || 
+                                               this.parentNode.parentNode.querySelector('.invalid-feedback');
+                                if (feedback) {
+                                    feedback.textContent = 'This field is required.';
+                                    feedback.style.display = 'block';
+                                }
+                            } else {
+                                this.classList.remove('is-invalid');
+                                const feedback = this.parentNode.querySelector('.invalid-feedback') || 
+                                               this.parentNode.parentNode.querySelector('.invalid-feedback');
+                                if (feedback) {
+                                    feedback.style.display = 'none';
+                                }
+                            }
+                        });
+                        
+                        field.addEventListener('input', function() {
+                            if (this.classList.contains('is-invalid') && this.value.trim()) {
+                                this.classList.remove('is-invalid');
+                                const feedback = this.parentNode.querySelector('.invalid-feedback') || 
+                                               this.parentNode.parentNode.querySelector('.invalid-feedback');
+                                if (feedback) {
+                                    feedback.style.display = 'none';
+                                }
+                            }
+                        });
+                    });
+                    </script>
+                    
+                    
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/css/intlTelInput.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/intlTelInput.min.js"></script>
+<!-- jQuery (required by Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Select2 CSS/JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<datalist id="size-options">
+    {% for v in size_options %}
+        <option value="{{ v }}"></option>
+    {% endfor %}
+</datalist>
+<datalist id="color-options">
+    {% for v in color_options %}
+        <option value="{{ v }}"></option>
+    {% endfor %}
+</datalist>
+<datalist id="model-options">
+    {% for v in model_options %}
+        <option value="{{ v }}"></option>
+    {% endfor %}
+</datalist>
+<datalist id="brand-options">
+    {% for v in brand_options %}
+        <option value="{{ v }}"></option>
+    {% endfor %}
+</datalist>
+<datalist id="ankle-options">
+    {% for v in ankle_options %}
+        <option value="{{ v }}"></option>
+    {% endfor %}
+</datalist>
+<datalist id="material-options">
+    {% for v in material_options %}
+        <option value="{{ v }}"></option>
+    {% endfor %}
+</datalist>
+<datalist id="people-options">
+    {% for v in people_options %}
+        <option value="{{ v }}"></option>
+    {% endfor %}
+</datalist>
+<script>
+// Initialize Select2 for category combo boxes
+function initCategoryCombos(scope) {
+    const $scope = scope ? $(scope) : $(document);
+    $scope.find('.category-combo').each(function(){
+        if ($(this).hasClass('select2-hidden-accessible')) return; // already initialized
+        $(this).select2({
+            tags: true,
+            width: '100%',
+            placeholder: 'Select or type new category',
+            allowClear: true,
+            createTag: function (params) {
+                const term = $.trim(params.term);
+                if (term === '') { return null; }
+                return { id: term, text: term, newTag: true };
+            }
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initCategoryCombos();
+});
+</script>
+<script>
+// Mapping from category name (lowercased) to the list of attribute keys
+const CATEGORY_ATTRIBUTES_MAP = {
+    'shoes': ['size','color','model','brand','ankle','material'],
+    'safety shoes': ['size','color','model','brand','ankle','material'],
+    'safety helmet': ['material','model','brand','color'],
+    'safety goggles': ['model','brand','color'],
+    'safety jacket': ['material','model','brand','color'],
+    'coveralls': ['color','material','model','brand','size'],
+    'pant & shirt': ['color','model','brand','size'],
+    'safety harness': ['color','brand','model'],
+    'safety gloves': ['color','brand','model','material','size'],
+    'ear plugs': ['material','model'],
+    'warning tape': ['size','color'],
+    'first aid kit': ['people'],
+    'labcoat': ['color','material','model','brand'],
+    'fire blanket': ['size'],
+    'mask': ['model','color'],
+    'bump caps': ['model','size'],
+    'lockouts': ['color'],
+    'rainsuit': ['color','material','model','brand','size'],
+    'raincoat': ['color','material'],
+    'eye wash': ['model'],
+    'traffic cone': ['size','material','model','color'],
+    'warning light': ['model','color'],
+    'whistle': ['model','color'],
+    'traffic batton': ['model','color'],
+    'sign board': ['model']
+};
+
+function normalizeCategoryName(name) {
+    if (!name) {
+        return '';
+    }
+    return name.trim().toLowerCase();
+}
+
+function getAttributesForCategoryName(rawName) {
+    const normalized = normalizeCategoryName(rawName);
+    if (!normalized) {
+        return [];
+    }
+
+    const attrsSet = new Set();
+
+    // 1) Direct exact match
+    if (CATEGORY_ATTRIBUTES_MAP[normalized]) {
+        CATEGORY_ATTRIBUTES_MAP[normalized].forEach(a => attrsSet.add(a));
+    }
+
+    // 2) Substring matches to handle combined names like
+    //    "Safety Jacket, Safety Shoes, Safety Helmets"
+    Object.entries(CATEGORY_ATTRIBUTES_MAP).forEach(([key, attrs]) => {
+        if (normalized.includes(key)) {
+            attrs.forEach(a => attrsSet.add(a));
+        }
+    });
+
+    let result = Array.from(attrsSet);
+
+    // Fallback: if we didn't find any mapping but a category is selected,
+    // show all core attributes so the user always gets fields.
+    if (!result.length) {
+        result = ['size','color','model','brand','ankle','material','people'];
+    }
+
+    console.log('Attribute resolver:', {
+        rawName,
+        normalized,
+        matchedAttributes: result
+    });
+    return result;
+}
+
+function updateAttributeFieldsForProductItem(productItem) {
+    const categorySelectEl = productItem.querySelector('.category-combo');
+    if (!categorySelectEl) {
+        return;
+    }
+    // For Select2, we still read the underlying select value (the text/id we stored there)
+    const rawName = categorySelectEl.value;
+    console.log('Update attributes for product item', {
+        index: productItem.getAttribute('data-index'),
+        rawCategory: rawName
+    });
+    const attrs = getAttributesForCategoryName(rawName);
+
+    // Ensure attribute fields are visible; category mapping controls which ones matter
+    productItem.querySelectorAll('.attr-field').forEach(function(field) {
+        field.classList.remove('d-none');
+    });
+
+    attrs.forEach(function(attr) {
+        const field = productItem.querySelector('.attr-' + attr);
+        if (field) {
+            field.classList.remove('d-none');
+        }
+    });
+
+    const attributesBody = productItem.querySelector('.attributes-body');
+    const toggleBtn = productItem.querySelector('.toggle-attributes-btn');
+    const hasCategory = rawName && rawName.trim();
+    if (attributesBody && hasCategory) {
+        attributesBody.classList.remove('d-none');
+        if (toggleBtn) {
+            toggleBtn.textContent = 'Hide Attributes';
+        }
+    } else if (attributesBody && !hasCategory) {
+        attributesBody.classList.add('d-none');
+        if (toggleBtn) {
+            toggleBtn.textContent = 'Show Attributes';
+        }
+    }
+}
+
+function setupImageDropzones(scope) {
+    const root = scope || document;
+    const zones = root.querySelectorAll('.image-dropzone');
+    zones.forEach(function(zone) {
+        if (zone.dataset.bound === '1') {
+            return;
+        }
+        zone.dataset.bound = '1';
+
+        const input = zone.querySelector('input[type="file"]');
+        const filenameEl = zone.querySelector('.image-dropzone-filename');
+        const previewEl = zone.querySelector('.image-dropzone-preview');
+        const textEl = zone.querySelector('.image-dropzone-text');
+        let previewUrl = null;
+
+        function setUI(file) {
+            if (!file) {
+                if (filenameEl) {
+                    filenameEl.textContent = '';
+                    filenameEl.classList.add('d-none');
+                }
+                if (previewEl) {
+                    previewEl.classList.add('d-none');
+                    previewEl.removeAttribute('src');
+                }
+                if (textEl) {
+                    textEl.classList.remove('d-none');
+                }
+                if (previewUrl) {
+                    URL.revokeObjectURL(previewUrl);
+                    previewUrl = null;
+                }
+                return;
+            }
+
+            if (textEl) {
+                textEl.classList.add('d-none');
+            }
+            if (filenameEl) {
+                filenameEl.textContent = file.name;
+                filenameEl.classList.remove('d-none');
+            }
+            if (previewEl && file.type && file.type.startsWith('image/')) {
+                if (previewUrl) {
+                    URL.revokeObjectURL(previewUrl);
+                }
+                previewUrl = URL.createObjectURL(file);
+                previewEl.src = previewUrl;
+                previewEl.classList.remove('d-none');
+            }
+        }
+
+        function assignFile(file) {
+            if (!input || !file) {
+                return;
+            }
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            input.files = dt.files;
+            setUI(file);
+        }
+
+        zone.addEventListener('click', function(e) {
+            if (!input) {
+                return;
+            }
+            if (e.target && e.target.tagName === 'INPUT') {
+                return;
+            }
+            input.click();
+        });
+
+        zone.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (input) {
+                    input.click();
+                }
+            }
+        });
+
+        zone.addEventListener('dragenter', function(e) {
+            e.preventDefault();
+            zone.classList.add('is-dragover');
+        });
+
+        zone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            zone.classList.add('is-dragover');
+        });
+
+        zone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            zone.classList.remove('is-dragover');
+        });
+
+        zone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            zone.classList.remove('is-dragover');
+            const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            if (file) {
+                assignFile(file);
+            }
+        });
+
+        if (input) {
+            input.addEventListener('change', function() {
+                const file = input.files && input.files[0];
+                setUI(file);
+            });
+        }
+    });
+}
+
+function setupAttributeListener(productItem) {
+    const categorySelectEl = productItem.querySelector('.category-combo');
+    if (!categorySelectEl) {
+        return;
+    }
+    categorySelectEl.addEventListener('change', function() {
+        console.log('Category changed on product item', productItem.getAttribute('data-index'), 'to', categorySelectEl.value);
+        updateAttributeFieldsForProductItem(productItem);
+    });
+    // Initialize once on load
+    updateAttributeFieldsForProductItem(productItem);
+}
+
+function setupAttributeToggle(productItem) {
+    const attributesBody = productItem.querySelector('.attributes-body');
+    const toggleBtn = productItem.querySelector('.toggle-attributes-btn');
+    if (!attributesBody || !toggleBtn) {
+        return;
+    }
+    toggleBtn.addEventListener('click', function() {
+        const isHidden = attributesBody.classList.contains('d-none');
+        if (isHidden) {
+            attributesBody.classList.remove('d-none');
+            toggleBtn.textContent = 'Hide Attributes';
+        } else {
+            attributesBody.classList.add('d-none');
+            toggleBtn.textContent = 'Show Attributes';
+        }
+    });
+}
+</script>
+<script>
+// Function to toggle invoice fields based on selected stage
+function toggleInvoiceFields() {
+    const stageSelect = document.querySelector('#id_enquiry_stage');
+    const proformaInvoiceField = document.querySelector('#proforma_invoice_field');
+    const invoiceField = document.querySelector('#invoice_field');
+    const invoiceDateField = document.querySelector('#invoice_date_field');
+    const invoiceAmountField = document.querySelector('#invoice_amount_field');
+    const invoiceStatusField = document.querySelector('#invoice_status_field');
+    
+    if (!stageSelect) return;
+    
+    // Hide all invoice fields by default
+    proformaInvoiceField.style.display = 'none';
+    invoiceField.style.display = 'none';
+    invoiceDateField.style.display = 'none';
+    invoiceAmountField.style.display = 'none';
+    invoiceStatusField.style.display = 'none';
+    
+    // Show relevant fields based on selected stage
+    const selectedStage = stageSelect.value;
+    if (selectedStage === 'proforma_invoice_sent') {
+        proformaInvoiceField.style.display = 'block';
+    } else if (['invoice_made', 'invoice_sent'].includes(selectedStage)) {
+        invoiceField.style.display = 'block';
+        invoiceDateField.style.display = 'block';
+        invoiceAmountField.style.display = 'block';
+        invoiceStatusField.style.display = 'block';
+    }
+}
+
+// Phone input initialization
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initializing phone input...');
+    
+    // Initialize invoice fields visibility based on current stage
+    toggleInvoiceFields();
+    
+    const phoneInput = document.querySelector("#__intl_tel_input_disabled__");
+    console.log('Phone input found:', !!phoneInput);
+    
+    if (phoneInput) {
+        console.log('IntlTelInput available:', typeof window.intlTelInput);
+        
+        if (typeof window.intlTelInput !== 'undefined') {
+            try {
+                const iti = window.intlTelInput(phoneInput, {
+                    autoPlaceholder: "aggressive",
+                    initialCountry: "ae",
+                    preferredCountries: ["ae", "sa", "qa", "kw", "bh", "om", "us", "gb", "in"],
+                    utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js",
+                    autoInsertDialCode: false, // user will choose country code manually
+                    formatOnDisplay: false,    // do not auto-format as user types
+                    nationalMode: false,
+                    separateDialCode: true,
+                });
+                console.log('IntlTelInput initialized successfully');
+                
+                // Update hidden field with full number on form submit
+                const form = phoneInput.closest('form');
+                form.addEventListener('submit', function() {
+                    phoneInput.value = iti.getNumber();
+                    console.log('Phone number updated for form submission:', phoneInput.value);
+                });
+                
+                // Validate phone number on blur
+                phoneInput.addEventListener('blur', function() {
+                    if (phoneInput.value.trim()) {
+                        if (iti.isValidNumber()) {
+                            phoneInput.classList.remove('is-invalid');
+                            phoneInput.classList.add('is-valid');
+                            console.log('Phone number is valid');
+                        } else {
+                            phoneInput.classList.remove('is-valid');
+                            phoneInput.classList.add('is-invalid');
+                            console.log('Phone number is invalid');
+                        }
+                    }
+                });
+                
+                // Update country field only when user changes country manually
+                const countryField = document.querySelector('input[name="country"]');
+                phoneInput.addEventListener('countrychange', function() {
+                    const countryData = iti.getSelectedCountryData();
+                    if (countryField) {
+                        countryField.value = countryData.name;
+                        console.log('Country changed to:', countryData.name);
+                    }
+                });
+            } catch (error) {
+                console.error('Error initializing IntlTelInput:', error);
+                // Fallback: at least make sure the phone input works without the dropdown
+                console.log('Using phone input without country dropdown');
+            }
+        } else {
+            console.error('IntlTelInput library not loaded - using basic phone input');
+            // Fallback: ensure phone input still works
+            const form = phoneInput.closest('form');
+            form.addEventListener('submit', function() {
+                // Just use the value as-is if intl-tel-input isn't available
+                console.log('Submitting phone value as-is:', phoneInput.value);
+            });
+        }
+    } else {
+        console.error('Phone input element not found');
+    }
+    // Selectors used for category/subcategory cascading
+    const categorySelect = document.querySelector('select[name="category"]');
+    const subcategorySelect = document.querySelector('select[name="subcategory"]');
+
+    // Initialize subcategory if lead has category and subcategory (for editing)
+    if (categorySelect && subcategorySelect && categorySelect.value) {
+        const categoryId = categorySelect.value;
+        console.log('Initializing subcategory for category:', categoryId);
+        
+        // Fetch subcategories for the selected category
+        const subcategoriesUrl = "{% url 'crm_app:get_subcategories' 0 %}".replace('0', categoryId);
+        fetch(subcategoriesUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Subcategories received for initialization:', data);
+                if (data.subcategories && data.subcategories.length > 0) {
+                    data.subcategories.forEach(subcategory => {
+                        const option = document.createElement('option');
+                        option.value = subcategory.id;
+                        option.textContent = subcategory.name;
+                        subcategorySelect.appendChild(option);
+                    });
+                    subcategorySelect.disabled = false;
+                    
+                    // Select the existing subcategory if it matches
+                    if (subcategorySelect.value === '' && '{{ form.subcategory.value|default:"" }}') {
+                        subcategorySelect.value = '{{ form.subcategory.value|default:"" }}';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error initializing subcategories:', error);
+                subcategorySelect.disabled = false;
+            });
+    }
+    
+    if (categorySelect && subcategorySelect) {
+        categorySelect.addEventListener('change', function() {
+            const categoryId = this.value;
+            console.log('Category selected:', categoryId); // Debug log
+            
+            // Clear subcategory options
+            subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
+            subcategorySelect.disabled = true;
+            
+            if (categoryId) {
+                console.log('Fetching subcategories for category:', categoryId); // Debug log
+                // Fetch subcategories for selected category
+                const subcategoriesUrl = "{% url 'crm_app:get_subcategories' 0 %}".replace('0', categoryId);
+                fetch(subcategoriesUrl)
+                    .then(response => {
+                        console.log('Response status:', response.status); // Debug log
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Subcategories received:', data);
+                        if (data.subcategories && data.subcategories.length > 0) {
+                            data.subcategories.forEach(subcategory => {
+                                const option = document.createElement('option');
+                                option.value = subcategory.id;
+                                option.textContent = subcategory.name;
+                                subcategorySelect.appendChild(option);
+                            });
+                            subcategorySelect.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching subcategories:', error);
+                        // Re-enable the subcategory select even if there's an error
+                        subcategorySelect.disabled = false;
+                    });
+            }
+        });
+    }
+
+    // Dynamic Product Entry Management
+    const addProductBtn = document.getElementById('addProductBtn');
+    const productContainer = document.getElementById('productContainer');
+    // Compute starting index from existing items
+    let productIndex = productContainer ? productContainer.querySelectorAll('.product-item').length : 0;
+    
+    // Initialize listeners for existing items
+    if (productContainer) {
+        productContainer.querySelectorAll('.product-item').forEach(function(item){
+            setupCategoryChangeListener(item);
+            setupAttributeToggle(item);
+        });
+        setupImageDropzones(productContainer);
+        updateRemoveButtons();
+    }
+    
+    if (addProductBtn && productContainer) {
+        addProductBtn.addEventListener('click', function() {
+            const newProductEntry = createProductEntry(productIndex);
+            productContainer.appendChild(newProductEntry);
+            productIndex++;
+            updateRemoveButtons();
+            setupCategoryChangeListener(newProductEntry);
+            setupAttributeListener(newProductEntry);
+            setupAttributeToggle(newProductEntry);
+            // Initialize Select2 on the new row
+            initCategoryCombos(newProductEntry);
+            setupImageDropzones(newProductEntry);
+        });
+    }
+    
+    // Function to create a new product entry
+    function createProductEntry(index) {
+        const productEntry = document.createElement('div');
+        productEntry.className = 'product-item border-bottom mb-3 pb-3';
+        productEntry.setAttribute('data-index', index);
+
+        productEntry.innerHTML =
+            '<div class="d-flex justify-content-between align-items-center mb-3">' +
+                '<small class="text-muted fw-semibold">Product Entry ' + (index + 1) + '</small>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger remove-product-btn">' +
+                    '<i class="bi bi-trash"></i> Remove' +
+                '</button>' +
+            '</div>' +
+            '<div class="row g-3">' +
+                '<div class="col-md-6">' +
+                    '<div class="mb-3">' +
+                        '<label class="form-label fw-semibold">Category</label>' +
+                        '<select name="categories_text[]" class="form-control category-combo dynamic-combo">' +
+                            '<option></option>' +
+                            '{% for category in categories %}' +
+                                '<option value="{{ category.name }}">{{ category.name }}</option>' +
+                            '{% endfor %}' +
+                        '</select>' +
+                        '<div class="form-text">Pick from list or type a new name to create.</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="col-md-6">' +
+                    '<div class="mb-3">' +
+                        '<label class="form-label fw-semibold">Product Image</label>' +
+                        '<div class="image-dropzone" role="button" tabindex="0">' +
+                            '<span class="image-dropzone-text">Drag &amp; drop or click to select</span>' +
+                            '<span class="image-dropzone-filename d-none"></span>' +
+                            '<img class="image-dropzone-preview d-none" alt="">' +
+                            '<input type="file" name="product_images_' + index + '" class="visually-hidden product-image-input" accept="image/*">' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="row g-3">' +
+                '<div class="col-md-6">' +
+                    '<div class="mb-3">' +
+                        '<label class="form-label fw-semibold">Quantity</label>' +
+                        '<input type="number" name="quantities[]" class="form-control" placeholder="Enter quantity" min="1">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="col-md-6">' +
+                    '<div class="mb-3">' +
+                        '<label class="form-label fw-semibold">Price</label>' +
+                        '<input type="number" name="prices[]" class="form-control" placeholder="Enter price" step="0.01" min="0">' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="product-attributes mt-2">' +
+                '<button type="button" class="btn btn-sm btn-outline-secondary toggle-attributes-btn">' +
+                    'Show Attributes' +
+                '</button>' +
+                '<div class="attributes-body d-none mt-2">' +
+                    '<div class="row g-3">' +
+                        '<div class="col-md-4 attr-field attr-size d-none">' +
+                            '<div class="mb-3">' +
+                                '<label class="form-label fw-semibold">Size</label>' +
+                                '<input type="text" name="attr_size[]" class="form-control" list="size-options">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="col-md-4 attr-field attr-color d-none">' +
+                            '<div class="mb-3">' +
+                                '<label class="form-label fw-semibold">Color</label>' +
+                                '<input type="text" name="attr_color[]" class="form-control" list="color-options">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="col-md-4 attr-field attr-model d-none">' +
+                            '<div class="mb-3">' +
+                                '<label class="form-label fw-semibold">Model</label>' +
+                                '<input type="text" name="attr_model[]" class="form-control" list="model-options">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="col-md-4 attr-field attr-brand d-none">' +
+                            '<div class="mb-3">' +
+                                '<label class="form-label fw-semibold">Brand</label>' +
+                                '<input type="text" name="attr_brand[]" class="form-control" list="brand-options">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="col-md-4 attr-field attr-ankle d-none">' +
+                            '<div class="mb-3">' +
+                                '<label class="form-label fw-semibold">Ankle</label>' +
+                                '<input type="text" name="attr_ankle[]" class="form-control" list="ankle-options">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="col-md-4 attr-field attr-material d-none">' +
+                            '<div class="mb-3">' +
+                                '<label class="form-label fw-semibold">Material</label>' +
+                                '<input type="text" name="attr_material[]" class="form-control" list="material-options">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="col-md-4 attr-field attr-people d-none">' +
+                            '<div class="mb-3">' +
+                                '<label class="form-label fw-semibold">People / Capacity</label>' +
+                                '<input type="text" name="attr_people[]" class="form-control" list="people-options">' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+
+        return productEntry;
+    }
+    
+
+    function updateRemoveButtons() {
+        const productEntries = productContainer.querySelectorAll('.product-item');
+        const removeButtons = productContainer.querySelectorAll('.remove-product-btn');
+        
+        // Show remove buttons only if there's more than one product entry
+        removeButtons.forEach(btn => {
+            btn.style.display = productEntries.length > 1 ? 'inline-block' : 'none';
+        });
+        
+        // Update product numbers
+       
+    }
+    
+    // Remove Product Button Event Delegation
+    productContainer.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-product-btn')) {
+            const productEntry = e.target.closest('.product-item');
+            productEntry.remove();
+            updateRemoveButtons();
+        }
+    });
+    
+    // Function to setup category change listener for a product entry
+    function setupCategoryChangeListener(productEntry) {
+        const categorySelectEl = productEntry.querySelector('.category-select');
+        const subcategorySelectEl = productEntry.querySelector('.subcategory-select');
+        
+        if (!categorySelectEl || !subcategorySelectEl) {
+            // Current layout does not include subcategory; safely skip binding
+            return;
+        }
+        
+        categorySelectEl.addEventListener('change', function() {
+            const categoryId = this.value;
+            console.log('Category selected:', categoryId); // Debug log
+            
+            // Clear subcategory options
+            subcategorySelectEl.innerHTML = '<option value="">Select Subcategory</option>';
+            subcategorySelectEl.disabled = true;
+            
+            if (categoryId) {
+                console.log('Fetching subcategories for category:', categoryId); // Debug log
+                // Fetch subcategories for selected category
+                const subcategoriesUrl = "{% url 'crm_app:get_subcategories' 0 %}".replace('0', categoryId);
+                fetch(subcategoriesUrl)
+                    .then(response => {
+                        console.log('Response status:', response.status); // Debug log
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Subcategories received:', data);
+                        if (data.subcategories && data.subcategories.length > 0) {
+                            data.subcategories.forEach(subcategory => {
+                                const option = document.createElement('option');
+                                option.value = subcategory.id;
+                                option.textContent = subcategory.name;
+                                subcategorySelectEl.appendChild(option);
+                            });
+                            subcategorySelectEl.disabled = false;
+                            console.log('Subcategory dropdown enabled with', data.subcategories.length, 'options'); // Debug log
+                        } else {
+                            console.log('No subcategories found for category:', categoryId);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching subcategories:', error);
+                        // Re-enable the subcategory select even if there's an error
+                        subcategorySelectEl.disabled = false;
+                    });
+            }
+        });
+    }
+    
+    // Setup category and attribute listeners for initial product entries
+    if (productContainer) {
+        productContainer.querySelectorAll('.product-item').forEach(function(item) {
+            setupAttributeListener(item);
+            setupAttributeToggle(item);
+        });
+    }
+
+    // Handle country code for phone number
+    const phoneInputField = document.querySelector('input[name="phone_number"]');
+    const countryCodeSelector = document.getElementById('country_code');
+    const countryCodeBtn = document.getElementById('countryCodeBtn');
+    const countryCodeBtnText = document.getElementById('countryCodeBtnText');
+    const countryCodeMenu = document.getElementById('countryCodeMenu');
+    const countryCodeBtnFlag = document.getElementById('countryCodeBtnFlag');
+    const countryCodeSearch = document.getElementById('countryCodeSearch');
+    const countryCodeList = document.getElementById('countryCodeList');
+    
+    if (phoneInputField && countryCodeSelector && countryCodeBtn && countryCodeMenu) {
+        const countryCodes = [
+            { code: '+93', iso: 'af', name: 'Afghanistan' },
+            { code: '+355', iso: 'al', name: 'Albania' },
+            { code: '+213', iso: 'dz', name: 'Algeria' },
+            { code: '+376', iso: 'ad', name: 'Andorra' },
+            { code: '+244', iso: 'ao', name: 'Angola' },
+            { code: '+54', iso: 'ar', name: 'Argentina' },
+            { code: '+374', iso: 'am', name: 'Armenia' },
+            { code: '+61', iso: 'au', name: 'Australia' },
+            { code: '+43', iso: 'at', name: 'Austria' },
+            { code: '+994', iso: 'az', name: 'Azerbaijan' },
+            { code: '+973', iso: 'bh', name: 'Bahrain' },
+            { code: '+880', iso: 'bd', name: 'Bangladesh' },
+            { code: '+375', iso: 'by', name: 'Belarus' },
+            { code: '+32', iso: 'be', name: 'Belgium' },
+            { code: '+229', iso: 'bj', name: 'Benin' },
+            { code: '+591', iso: 'bo', name: 'Bolivia' },
+            { code: '+387', iso: 'ba', name: 'Bosnia & Herzegovina' },
+            { code: '+267', iso: 'bw', name: 'Botswana' },
+            { code: '+55', iso: 'br', name: 'Brazil' },
+            { code: '+673', iso: 'bn', name: 'Brunei' },
+            { code: '+359', iso: 'bg', name: 'Bulgaria' },
+            { code: '+226', iso: 'bf', name: 'Burkina Faso' },
+            { code: '+855', iso: 'kh', name: 'Cambodia' },
+            { code: '+237', iso: 'cm', name: 'Cameroon' },
+            { code: '+1', iso: 'ca', name: 'Canada' },
+            { code: '+56', iso: 'cl', name: 'Chile' },
+            { code: '+86', iso: 'cn', name: 'China' },
+            { code: '+57', iso: 'co', name: 'Colombia' },
+            { code: '+506', iso: 'cr', name: 'Costa Rica' },
+            { code: '+385', iso: 'hr', name: 'Croatia' },
+            { code: '+53', iso: 'cu', name: 'Cuba' },
+            { code: '+357', iso: 'cy', name: 'Cyprus' },
+            { code: '+420', iso: 'cz', name: 'Czechia' },
+            { code: '+45', iso: 'dk', name: 'Denmark' },
+            { code: '+20', iso: 'eg', name: 'Egypt' },
+            { code: '+503', iso: 'sv', name: 'El Salvador' },
+            { code: '+372', iso: 'ee', name: 'Estonia' },
+            { code: '+251', iso: 'et', name: 'Ethiopia' },
+            { code: '+358', iso: 'fi', name: 'Finland' },
+            { code: '+33', iso: 'fr', name: 'France' },
+            { code: '+995', iso: 'ge', name: 'Georgia' },
+            { code: '+49', iso: 'de', name: 'Germany' },
+            { code: '+233', iso: 'gh', name: 'Ghana' },
+            { code: '+30', iso: 'gr', name: 'Greece' },
+            { code: '+502', iso: 'gt', name: 'Guatemala' },
+            { code: '+224', iso: 'gn', name: 'Guinea' },
+            { code: '+592', iso: 'gy', name: 'Guyana' },
+            { code: '+509', iso: 'ht', name: 'Haiti' },
+            { code: '+504', iso: 'hn', name: 'Honduras' },
+            { code: '+852', iso: 'hk', name: 'Hong Kong' },
+            { code: '+36', iso: 'hu', name: 'Hungary' },
+            { code: '+354', iso: 'is', name: 'Iceland' },
+            { code: '+91', iso: 'in', name: 'India' },
+            { code: '+62', iso: 'id', name: 'Indonesia' },
+            { code: '+98', iso: 'ir', name: 'Iran' },
+            { code: '+964', iso: 'iq', name: 'Iraq' },
+            { code: '+353', iso: 'ie', name: 'Ireland' },
+            { code: '+972', iso: 'il', name: 'Israel' },
+            { code: '+39', iso: 'it', name: 'Italy' },
+            { code: '+81', iso: 'jp', name: 'Japan' },
+            { code: '+962', iso: 'jo', name: 'Jordan' },
+            { code: '+7', iso: 'kz', name: 'Kazakhstan' },
+            { code: '+254', iso: 'ke', name: 'Kenya' },
+            { code: '+965', iso: 'kw', name: 'Kuwait' },
+            { code: '+996', iso: 'kg', name: 'Kyrgyzstan' },
+            { code: '+371', iso: 'lv', name: 'Latvia' },
+            { code: '+961', iso: 'lb', name: 'Lebanon' },
+            { code: '+231', iso: 'lr', name: 'Liberia' },
+            { code: '+370', iso: 'lt', name: 'Lithuania' },
+            { code: '+352', iso: 'lu', name: 'Luxembourg' },
+            { code: '+853', iso: 'mo', name: 'Macau' },
+            { code: '+389', iso: 'mk', name: 'North Macedonia' },
+            { code: '+261', iso: 'mg', name: 'Madagascar' },
+            { code: '+265', iso: 'mw', name: 'Malawi' },
+            { code: '+60', iso: 'my', name: 'Malaysia' },
+            { code: '+960', iso: 'mv', name: 'Maldives' },
+            { code: '+223', iso: 'ml', name: 'Mali' },
+            { code: '+356', iso: 'mt', name: 'Malta' },
+            { code: '+212', iso: 'ma', name: 'Morocco' },
+            { code: '+52', iso: 'mx', name: 'Mexico' },
+            { code: '+373', iso: 'md', name: 'Moldova' },
+            { code: '+382', iso: 'me', name: 'Montenegro' },
+            { code: '+977', iso: 'np', name: 'Nepal' },
+            { code: '+31', iso: 'nl', name: 'Netherlands' },
+            { code: '+64', iso: 'nz', name: 'New Zealand' },
+            { code: '+505', iso: 'ni', name: 'Nicaragua' },
+            { code: '+227', iso: 'ne', name: 'Niger' },
+            { code: '+234', iso: 'ng', name: 'Nigeria' },
+            { code: '+47', iso: 'no', name: 'Norway' },
+            { code: '+968', iso: 'om', name: 'Oman' },
+            { code: '+92', iso: 'pk', name: 'Pakistan' },
+            { code: '+970', iso: 'ps', name: 'Palestine' },
+            { code: '+507', iso: 'pa', name: 'Panama' },
+            { code: '+595', iso: 'py', name: 'Paraguay' },
+            { code: '+51', iso: 'pe', name: 'Peru' },
+            { code: '+63', iso: 'ph', name: 'Philippines' },
+            { code: '+48', iso: 'pl', name: 'Poland' },
+            { code: '+351', iso: 'pt', name: 'Portugal' },
+            { code: '+974', iso: 'qa', name: 'Qatar' },
+            { code: '+40', iso: 'ro', name: 'Romania' },
+            { code: '+7', iso: 'ru', name: 'Russia' },
+            { code: '+250', iso: 'rw', name: 'Rwanda' },
+            { code: '+966', iso: 'sa', name: 'Saudi Arabia' },
+            { code: '+221', iso: 'sn', name: 'Senegal' },
+            { code: '+381', iso: 'rs', name: 'Serbia' },
+            { code: '+65', iso: 'sg', name: 'Singapore' },
+            { code: '+421', iso: 'sk', name: 'Slovakia' },
+            { code: '+386', iso: 'si', name: 'Slovenia' },
+            { code: '+252', iso: 'so', name: 'Somalia' },
+            { code: '+27', iso: 'za', name: 'South Africa' },
+            { code: '+82', iso: 'kr', name: 'South Korea' },
+            { code: '+34', iso: 'es', name: 'Spain' },
+            { code: '+94', iso: 'lk', name: 'Sri Lanka' },
+            { code: '+46', iso: 'se', name: 'Sweden' },
+            { code: '+41', iso: 'ch', name: 'Switzerland' },
+            { code: '+886', iso: 'tw', name: 'Taiwan' },
+            { code: '+992', iso: 'tj', name: 'Tajikistan' },
+            { code: '+255', iso: 'tz', name: 'Tanzania' },
+            { code: '+66', iso: 'th', name: 'Thailand' },
+            { code: '+216', iso: 'tn', name: 'Tunisia' },
+            { code: '+90', iso: 'tr', name: 'Turkey' },
+            { code: '+993', iso: 'tm', name: 'Turkmenistan' },
+            { code: '+256', iso: 'ug', name: 'Uganda' },
+            { code: '+380', iso: 'ua', name: 'Ukraine' },
+            { code: '+971', iso: 'ae', name: 'United Arab Emirates' },
+            { code: '+44', iso: 'gb', name: 'United Kingdom' },
+            { code: '+1', iso: 'us', name: 'United States' },
+            { code: '+598', iso: 'uy', name: 'Uruguay' },
+            { code: '+998', iso: 'uz', name: 'Uzbekistan' },
+            { code: '+58', iso: 've', name: 'Venezuela' },
+            { code: '+84', iso: 'vn', name: 'Vietnam' },
+            { code: '+967', iso: 'ye', name: 'Yemen' },
+            { code: '+260', iso: 'zm', name: 'Zambia' },
+            { code: '+263', iso: 'zw', name: 'Zimbabwe' },
+        ];
+
+        if (countryCodeList && countryCodeList.children.length === 0) {
+            countryCodes.forEach(({ code, iso, name }) => {
+                const li = document.createElement('li');
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'dropdown-item d-flex align-items-center gap-2';
+                btn.setAttribute('data-value', code);
+                btn.innerHTML = `<img src="https://flagcdn.com/16x12/${iso}.png" width="16" height="12" alt="${iso.toUpperCase()}"> <span class="flex-grow-1">${name}</span> <span class="text-muted ms-auto">${code}</span>`;
+                li.appendChild(btn);
+                countryCodeList.appendChild(li);
+            });
+        }
+
+        const allCountryCodeItems = Array.from(countryCodeMenu.querySelectorAll('[data-value]'));
+        const getAllCountryCodes = () => allCountryCodeItems.map(el => el.getAttribute('data-value')).filter(Boolean);
+
+        const resetCountryCodeOptions = () => {
+            allCountryCodeItems.forEach(el => {
+                const li = el.closest('li');
+                if (li) li.classList.remove('d-none');
+            });
+        };
+
+        const filterCountryCodeOptionsByPrefix = (prefix) => {
+            const matches = [];
+            allCountryCodeItems.forEach(el => {
+                const code = el.getAttribute('data-value') || '';
+                const isMatch = code.startsWith(prefix);
+                const li = el.closest('li');
+                if (li) li.classList.toggle('d-none', !isMatch);
+                if (isMatch) matches.push(code);
+            });
+            return matches;
+        };
+
+        const setCountryCode = (code) => {
+            if (!code) return;
+            countryCodeSelector.value = code;
+            if (countryCodeBtnText) countryCodeBtnText.textContent = code;
+
+            if (countryCodeBtnFlag) {
+                const matchBtn = allCountryCodeItems.find(el => el.getAttribute('data-value') === code);
+                if (matchBtn) {
+                    const img = matchBtn.querySelector('img');
+                    if (img && img.getAttribute('src')) {
+                        countryCodeBtnFlag.src = img.getAttribute('src');
+                        countryCodeBtnFlag.alt = img.getAttribute('alt') || '';
+                    }
+                }
+            }
+        };
+
+        const openCountryDropdown = (focusSearch) => {
+            const dropdown = countryCodeBtn.closest('.dropdown');
+            if (!dropdown) return;
+            dropdown.classList.add('show');
+            countryCodeMenu.classList.add('show');
+            countryCodeBtn.setAttribute('aria-expanded', 'true');
+
+            if (focusSearch && countryCodeSearch) {
+                requestAnimationFrame(() => {
+                    countryCodeSearch.focus({ preventScroll: true });
+                    countryCodeSearch.select();
+                });
+            }
+        };
+
+        const closeCountryDropdown = () => {
+            const dropdown = countryCodeBtn.closest('.dropdown');
+            if (!dropdown) return;
+            dropdown.classList.remove('show');
+            countryCodeMenu.classList.remove('show');
+            countryCodeBtn.setAttribute('aria-expanded', 'false');
+        };
+
+        // On page load, check if phone number already has country code and extract it
+        const currentPhone = phoneInputField.value;
+        if (currentPhone) {
+            const availableCodes = getAllCountryCodes().sort((a, b) => b.length - a.length);
+            for (let code of availableCodes) {
+                if (currentPhone.startsWith(code)) {
+                    setCountryCode(code);
+                    break;
+                }
+            }
+        }
+
+        countryCodeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (countryCodeMenu.classList.contains('show')) {
+                closeCountryDropdown();
+                resetCountryCodeOptions();
+            } else {
+                resetCountryCodeOptions();
+                openCountryDropdown(true);
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (countryCodeMenu.contains(e.target) || countryCodeBtn.contains(e.target)) return;
+            closeCountryDropdown();
+            resetCountryCodeOptions();
+        });
+
+        countryCodeMenu.addEventListener('click', function(e) {
+            const btn = e.target.closest('[data-value]');
+            if (!btn) return;
+            const code = btn.getAttribute('data-value');
+            setCountryCode(code);
+            resetCountryCodeOptions();
+            closeCountryDropdown();
+            if (countryCodeSearch) {
+                countryCodeSearch.value = '';
+            }
+            try {
+                phoneInputField.focus({ preventScroll: true });
+            } catch (e) {
+                phoneInputField.focus();
+            }
+        });
+
+        // If user starts typing a country code in the phone box (e.g. +1, +91),
+        // redirect those keystrokes to the dropdown search so they can keep typing
+        // more digits to narrow down country codes.
+        phoneInputField.addEventListener('keydown', function(e) {
+            if (!countryCodeSearch) return;
+
+            const current = (phoneInputField.value || '').trim();
+            const isCountryCodeMode = current.startsWith('+') || e.key === '+';
+            if (!isCountryCodeMode) return;
+
+            const isDigit = /^[0-9]$/.test(e.key);
+            const allowed = (e.key === '+') || isDigit || (e.key === 'Backspace') || (e.key === 'Escape') || (e.key === 'Enter');
+            if (!allowed) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            resetCountryCodeOptions();
+            openCountryDropdown(true);
+
+            let buf = (countryCodeSearch.value || '').trim();
+            if (!buf) {
+                buf = current.startsWith('+') ? current : '';
+            }
+
+            if (e.key === '+') {
+                if (!buf.startsWith('+')) buf = '+';
+            } else if (isDigit) {
+                if (!buf.startsWith('+')) buf = '+';
+                buf += e.key;
+            } else if (e.key === 'Backspace') {
+                buf = buf.slice(0, -1);
+            } else if (e.key === 'Escape') {
+                countryCodeSearch.value = '';
+                resetCountryCodeOptions();
+                closeCountryDropdown();
+                try {
+                    phoneInputField.focus({ preventScroll: true });
+                } catch (err) {
+                    phoneInputField.focus();
+                }
+                return;
+            } else if (e.key === 'Enter') {
+                const visible = allCountryCodeItems.filter(el => {
+                    const li = el.closest('li');
+                    return li && !li.classList.contains('d-none');
+                });
+                if (visible.length === 1) {
+                    const code = visible[0].getAttribute('data-value');
+                    setCountryCode(code);
+                    countryCodeSearch.value = '';
+                    resetCountryCodeOptions();
+                    closeCountryDropdown();
+                    try {
+                        phoneInputField.focus({ preventScroll: true });
+                    } catch (err) {
+                        phoneInputField.focus();
+                    }
+                }
+                return;
+            }
+
+            countryCodeSearch.value = buf;
+            countryCodeSearch.dispatchEvent(new Event('input'));
+
+            // Keep phone field clean while choosing country code
+            phoneInputField.value = '';
+        });
+
+        phoneInputField.addEventListener('input', function() {
+            const v = phoneInputField.value.trim();
+            // If a full number was pasted that includes a country code (starts with +),
+            // auto-select the best matching country code and keep the remainder in the input.
+            if (v.startsWith('+')) {
+                const availableCodes = getAllCountryCodes().sort((a, b) => b.length - a.length);
+                const bestMatchCode = availableCodes.find(code => v.startsWith(code));
+                if (bestMatchCode) {
+                    setCountryCode(bestMatchCode);
+                    const rest = v.substring(bestMatchCode.length).trim();
+                    phoneInputField.value = rest;
+                }
+            }
+        });
+
+        if (countryCodeSearch) {
+            countryCodeSearch.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+
+            countryCodeSearch.addEventListener('input', function() {
+                const q = (countryCodeSearch.value || '').trim();
+                if (!q) {
+                    resetCountryCodeOptions();
+                    return;
+                }
+                const normalized = q.startsWith('+') ? q : `+${q}`;
+                filterCountryCodeOptionsByPrefix(normalized);
+            });
+
+            countryCodeSearch.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    resetCountryCodeOptions();
+                    closeCountryDropdown();
+                }
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const visible = allCountryCodeItems.filter(el => {
+                        const li = el.closest('li');
+                        return li && !li.classList.contains('d-none');
+                    });
+                    if (visible.length === 1) {
+                        const code = visible[0].getAttribute('data-value');
+                        setCountryCode(code);
+                        resetCountryCodeOptions();
+                        closeCountryDropdown();
+                        try {
+                            phoneInputField.focus({ preventScroll: true });
+                        } catch (err) {
+                            phoneInputField.focus();
+                        }
+                    }
+                }
+            });
+        }
+        
+        // On form submit, concatenate country code with phone number
+        const leadForm = phoneInputField.closest('form');
+        if (leadForm) {
+            leadForm.addEventListener('submit', function(e) {
+                const countryCode = countryCodeSelector.value;
+                let phoneNumber = phoneInputField.value.trim();
+                
+                // Remove any existing country code from phone number
+                const availableCodes = getAllCountryCodes().sort((a, b) => b.length - a.length);
+                if (phoneNumber.startsWith('+')) {
+                    if (countryCode && phoneNumber.startsWith(countryCode)) {
+                        phoneNumber = phoneNumber.substring(countryCode.length).trim();
+                    } else {
+                        let stripped = false;
+                        for (let code of availableCodes) {
+                            if (phoneNumber.startsWith(code)) {
+                                phoneNumber = phoneNumber.substring(code.length).trim();
+                                stripped = true;
+                                break;
+                            }
+                        }
+                        if (!stripped) {
+                            phoneNumber = phoneNumber.replace(/^\+/, '');
+                        }
+                    }
+                }
+                
+                // Concatenate country code with phone number
+                phoneInputField.value = countryCode + phoneNumber;
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

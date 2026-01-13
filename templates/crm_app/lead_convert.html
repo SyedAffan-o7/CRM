@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Convert Lead - {{ lead.contact_name }}{% endblock %}
+{% block page_title %}Convert Lead to Contact{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'crm_app:lead_detail' lead.pk %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Back to Lead
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Convert Lead to Contact</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Lead Conversion:</strong> This will create a contact record and mark the lead as fulfilled.
+                </div>
+                
+                <!-- Lead Information -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Lead Information</h6>
+                        <p><strong>Name:</strong> {{ lead.contact_name }}</p>
+                        <p><strong>Phone:</strong> {{ lead.phone_number }}</p>
+                        <p><strong>Company:</strong> {{ lead.company_name|default:"Not specified" }}</p>
+                        <p><strong>Country:</strong> {{ lead.country|default:"Not detected" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Current Status</h6>
+                        <p><strong>Status:</strong> 
+                            <span class="badge bg-{{ lead.lead_status|yesno:'success,warning' }}">
+                                {{ lead.get_lead_status_display }}
+                            </span>
+                        </p>
+                        <p><strong>Stage:</strong> 
+                            <span class="badge bg-primary">{{ lead.get_enquiry_stage_display }}</span>
+                        </p>
+                        <p><strong>Created:</strong> {{ lead.created_date|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+                
+                <!-- Conversion Form -->
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="card mb-3" style="background-color: #f8f9fa;">
+                        <div class="card-body">
+                            <h6 class="card-title">Conversion Options</h6>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="create_deal" id="create_deal" checked>
+                                <label class="form-check-label" for="create_deal">
+                                    <strong>Also create a Deal</strong>
+                                    <small class="text-muted d-block">This will create both a contact and a deal record</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'crm_app:lead_detail' lead.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-arrow-right-circle"></i> Convert Lead
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

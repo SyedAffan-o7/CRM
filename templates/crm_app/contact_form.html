@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - AAA CRM{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'crm_app:contact_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Back to Customers
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.full_name.id_for_label }}" class="form-label">Full Name *</label>
+                                {{ form.full_name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.phone_number.id_for_label }}" class="form-label">Phone Number *</label>
+                                <input type="tel" id="phone-contact" name="phone_number" class="form-control" placeholder="Enter phone number" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label" for="email">Email</label>
+                                <input type="email" id="email" name="email" class="form-control" placeholder="name@example.com" value="{{ contact.email|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.whatsapp_number.id_for_label }}" class="form-label">WhatsApp Number</label>
+                                {{ form.whatsapp_number }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.role_position.id_for_label }}" class="form-label">Role/Position</label>
+                                {{ form.role_position }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.company.id_for_label }}" class="form-label">Company</label>
+                        {{ form.company }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.address.id_for_label }}" class="form-label">Address</label>
+                        {{ form.address }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                        {{ form.notes }}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'crm_app:contact_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Save Customer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const phoneInput = document.querySelector("#phone-contact");
+    const iti = window.intlTelInput(phoneInput, {
+        initialCountry: "ae",
+        preferredCountries: ["ae", "sa", "qa", "kw", "bh", "om", "us", "gb", "in"],
+        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js"
+    });
+    
+    // Update hidden field with full number on form submit
+    const form = phoneInput.closest('form');
+    form.addEventListener('submit', function() {
+        phoneInput.value = iti.getNumber();
+    });
+});
+</script>
+{% endblock %}

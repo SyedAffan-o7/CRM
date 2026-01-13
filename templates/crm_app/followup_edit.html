@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Follow-up{% endblock %}
+{% block page_title %}Edit Follow-up{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'crm_app:lead_detail' lead.pk %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Back to Lead
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0">Update Follow-up for {{ lead.contact_name }}</h6>
+      </div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Scheduled Date & Time</label>
+            {{ form.scheduled_date }}
+            {% if form.scheduled_date.errors %}
+            <div class="invalid-feedback d-block">{{ form.scheduled_date.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Type</label>
+            {{ form.followup_type }}
+            {% if form.followup_type.errors %}
+            <div class="invalid-feedback d-block">{{ form.followup_type.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Assign To</label>
+            {{ form.assigned_to }}
+            {% if form.assigned_to.errors %}
+            <div class="invalid-feedback d-block">{{ form.assigned_to.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            {{ form.notes }}
+            {% if form.notes.errors %}
+            <div class="invalid-feedback d-block">{{ form.notes.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex gap-2">
+            <a href="{% url 'crm_app:lead_detail' lead.pk %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

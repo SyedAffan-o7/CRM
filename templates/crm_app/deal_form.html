@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - CRM System{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'crm_app:deal_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Back to Deals
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.deal_name.id_for_label }}" class="form-label">Deal Name *</label>
+                                {{ form.deal_name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.deal_value.id_for_label }}" class="form-label">Deal Value</label>
+                                {{ form.deal_value }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.contact.id_for_label }}" class="form-label">Contact *</label>
+                                {{ form.contact }}
+                                <div class="form-text">Required - Select the primary contact for this deal</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.account.id_for_label }}" class="form-label">Account</label>
+                                {{ form.account }}
+                                <div class="form-text">Optional - Select the company/account if applicable</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.deal_stage.id_for_label }}" class="form-label">Deal Stage</label>
+                                {{ form.deal_stage }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.probability_percent.id_for_label }}" class="form-label">Probability %</label>
+                                {{ form.probability_percent }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.expected_close_date.id_for_label }}" class="form-label">Expected Close Date</label>
+                                {{ form.expected_close_date }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.products_services.id_for_label }}" class="form-label">Products/Services</label>
+                                {{ form.products_services }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.sales_person_assigned.id_for_label }}" class="form-label">Sales Person Assigned</label>
+                                {{ form.sales_person_assigned }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.reason_win_loss.id_for_label }}" class="form-label">Reason for Win/Loss</label>
+                        {{ form.reason_win_loss }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                        {{ form.notes }}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'crm_app:deal_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Save Deal
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

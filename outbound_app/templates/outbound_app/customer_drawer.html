@@ -1,0 +1,212 @@
+<!-- Customer Drawer - Slides in from right over the list view -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="customerDrawer" aria-labelledby="customerDrawerLabel" style="width: 500px;">
+  <div class="offcanvas-header border-bottom">
+    <div>
+      <h5 class="offcanvas-title" id="customerDrawerLabel">{{ contact.full_name }}</h5>
+      <small class="text-muted">
+        {% if contact.company %}{{ contact.company.company_name }}{% else %}Individual Customer{% endif %}
+      </small>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  
+  <div class="offcanvas-body p-0">
+    <!-- Status Bar -->
+    <div class="bg-light p-3 border-bottom">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex gap-2">
+          {% if contact.outbound_status == 'CONVERTED' %}
+            <span class="badge bg-success">🟢 Converted</span>
+          {% elif contact.outbound_status == 'CONTACTED' %}
+            <span class="badge bg-primary">🔵 Active</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">🟡 Not Contacted</span>
+          {% endif %}
+          
+          {% if overdue_follow_ups %}
+            <span class="badge bg-danger">🔴 Follow-up Due</span>
+          {% endif %}
+        </div>
+        
+        <a class="btn btn-sm btn-cta fw-bold" href="{% url 'crm_app:lead_add' %}?contact_id={{ contact.pk }}">
+          ➕ New Enquiry
+        </a>
+      </div>
+      
+      <!-- Quick Actions -->
+      <div class="btn-group w-100" role="group">
+        <button class="btn btn-outline-primary btn-sm" data-action="comm" data-method="PHONE"
+                data-contact-id="{{ contact.pk }}" data-contact-name="{{ contact.full_name }}"
+                data-phone="{{ contact.phone_number }}" data-whatsapp="{{ contact.whatsapp_number }}" data-email="{{ contact.email }}">
+          📞
+        </button>
+        <button class="btn btn-outline-success btn-sm" data-action="comm" data-method="WHATSAPP"
+                data-contact-id="{{ contact.pk }}" data-contact-name="{{ contact.full_name }}"
+                data-phone="{{ contact.phone_number }}" data-whatsapp="{{ contact.whatsapp_number }}" data-email="{{ contact.email }}">
+          💬
+        </button>
+        <button class="btn btn-outline-info btn-sm" data-action="comm" data-method="EMAIL"
+                data-contact-id="{{ contact.pk }}" data-contact-name="{{ contact.full_name }}"
+                data-phone="{{ contact.phone_number }}" data-whatsapp="{{ contact.whatsapp_number }}" data-email="{{ contact.email }}">
+          ✉️
+        </button>
+        <button class="btn btn-outline-dark btn-sm" data-action="comm" data-method="PHONE"
+                data-contact-id="{{ contact.pk }}" data-contact-name="{{ contact.full_name }}"
+                data-phone="{{ contact.phone_number }}" data-whatsapp="{{ contact.whatsapp_number }}" data-email="{{ contact.email }}">
+          📝 Log
+        </button>
+      </div>
+    </div>
+
+    <!-- Customer Info (Compact) -->
+    <div class="p-3 border-bottom">
+      <h6 class="mb-2"><i class="bi bi-person-circle"></i> Contact Info</h6>
+      <div class="small">
+        <div><strong>Phone:</strong> {{ contact.phone_number }}</div>
+        <div><strong>Email:</strong> {{ contact.email|default:'-' }}</div>
+        {% if contact.whatsapp_number %}
+          <div><strong>WhatsApp:</strong> {{ contact.whatsapp_number }}</div>
+        {% endif %}
+        {% if contact.company %}
+          <div><strong>Company:</strong> {{ contact.company.company_name }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Quick Stats (Horizontal) -->
+    <div class="p-3 border-bottom">
+      <div class="row text-center small">
+        <div class="col-3">
+          <div class="fw-bold text-primary">
+            {% if contact.last_contacted %}
+              {{ contact.last_contacted|timesince|truncatewords:1 }}
+            {% else %}
+              Never
+            {% endif %}
+          </div>
+          <div class="text-muted">Last Contact</div>
+        </div>
+        <div class="col-3">
+          <div class="fw-bold text-success">{{ total_interactions }}</div>
+          <div class="text-muted">Interactions</div>
+        </div>
+        <div class="col-3">
+          <div class="fw-bold text-info">{{ related_leads|length }}</div>
+          <div class="text-muted">Enquiries</div>
+        </div>
+        <div class="col-3">
+          <div class="fw-bold text-warning">{{ pending_follow_ups }}</div>
+          <div class="text-muted">Pending</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Timeline (Scrollable) -->
+    <div class="flex-grow-1" style="overflow-y: auto; max-height: 400px;">
+      <div class="p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0"><i class="bi bi-clock-history"></i> Timeline</h6>
+          <button class="btn btn-sm btn-outline-primary" data-action="comm" data-method="PHONE"
+                  data-contact-id="{{ contact.pk }}" data-contact-name="{{ contact.full_name }}"
+                  data-phone="{{ contact.phone_number }}" data-whatsapp="{{ contact.whatsapp_number }}" data-email="{{ contact.email }}">
+            <i class="bi bi-plus"></i> Add
+          </button>
+        </div>
+        
+        {% if activities %}
+          <div class="list-group timeline">
+            {% for activity in activities %}
+            <div class="list-group-item timeline-item">
+              <div class="d-flex">
+                <div class="me-2 flex-shrink-0">
+                  {% if activity.method == 'PHONE' %}
+                    <span class="badge rounded-pill bg-primary"><i class="bi bi-whatsapp"></i></span>
+                  {% elif activity.method == 'WHATSAPP' %}
+                    <span class="badge rounded-pill bg-success"><i class="bi bi-whatsapp"></i></span>
+                  {% elif activity.method == 'EMAIL' %}
+                    <span class="badge rounded-pill bg-info text-dark"><i class="bi bi-envelope-fill"></i></span>
+                  {% else %}
+                    <span class="badge rounded-pill bg-secondary"><i class="bi bi-chat-dots-fill"></i></span>
+                  {% endif %}
+                </div>
+                <div class="flex-grow-1 small">
+                  <div class="d-flex justify-content-between">
+                    <strong>{{ activity.get_method_display }}</strong>
+                    <small class="text-muted">{{ activity.created_at|date:'M d, H:i' }}</small>
+                  </div>
+                  {% if activity.summary %}
+                    <div class="text-muted mt-1">{{ activity.summary|truncatechars:80 }}</div>
+                  {% endif %}
+                  {% if activity.next_step != 'NONE' %}
+                    <div class="mt-1">
+                      <span class="badge bg-warning text-dark small">{{ activity.get_next_step_display }}</span>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center text-muted py-4">
+            <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+            <p class="mt-2 mb-0">No interactions yet</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Related Enquiries (Bottom) -->
+    {% if related_leads %}
+    <div class="border-top p-3">
+      <h6 class="mb-2"><i class="bi bi-list-check"></i> Recent Enquiries</h6>
+      {% for lead in related_leads|slice:":3" %}
+      <div class="d-flex justify-content-between align-items-center mb-2 small">
+        <div>
+          <strong>{{ lead.company_name|default:lead.contact_name|truncatechars:20 }}</strong>
+          <div class="text-muted">{{ lead.created_date|date:'M d' }}</div>
+        </div>
+        <span class="badge 
+          {% if lead.enquiry_stage == 'won' %}bg-success
+          {% elif lead.enquiry_stage == 'lost' %}bg-danger
+          {% elif lead.enquiry_stage == 'negotiation' %}bg-warning text-dark
+          {% else %}bg-secondary{% endif %} small">
+          {{ lead.get_enquiry_stage_display|truncatechars:8 }}
+        </span>
+      </div>
+      {% endfor %}
+      {% if related_leads|length > 3 %}
+        <div class="text-center mt-2">
+          <a href="/enquiries/?contact={{ contact.pk }}" class="btn btn-sm btn-outline-primary">
+            View All ({{ related_leads|length }})
+          </a>
+        </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.offcanvas-end {
+  border-left: 2px solid #dee2e6;
+}
+
+.badge.rounded-pill {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-group .btn {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .offcanvas-end {
+    width: 100% !important;
+  }
+}
+</style>

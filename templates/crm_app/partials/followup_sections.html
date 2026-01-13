@@ -1,0 +1,24 @@
+<div class="row">
+    <div class="col-md-4">
+        {% include 'crm_app/partials/followup_card.html' with followups=followups_overdue title="Overdue Follow-ups" badge_color="danger" %}
+    </div>
+    <div class="col-md-4">
+        {% include 'crm_app/partials/followup_card.html' with followups=followups_today title="Today's Follow-ups" badge_color="warning" %}
+    </div>
+    <div class="col-md-4">
+        {% include 'crm_app/partials/followup_card.html' with followups=followups_upcoming title="Upcoming Follow-ups" badge_color="info" %}
+    </div>
+</div>
+
+{% if selected_employee %}
+<div class="row mt-2">
+    <div class="col-12">
+        <div class="alert alert-info py-2 mb-0">
+            <small class="mb-0">
+                <i class="bi bi-info-circle"></i>
+                <strong>Filtered View:</strong> Showing follow-ups for selected salesperson only
+            </small>
+        </div>
+    </div>
+</div>
+{% endif %}

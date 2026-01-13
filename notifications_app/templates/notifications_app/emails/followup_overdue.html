@@ -1,0 +1,43 @@
+{% extends "notifications_app/emails/base_email.html" %}
+
+{% block title %}Overdue Follow-up - AAA CRM{% endblock %}
+
+{% block header_subtitle %}Overdue Follow-up Alert{% endblock %}
+
+{% block content %}
+<div class="priority-urgent">
+    <h2>🚨 Overdue Follow-up</h2>
+    <p>Hello {{ recipient.get_full_name|default:recipient.username }},</p>
+    
+    <p><strong>You have an overdue follow-up that requires immediate attention:</strong></p>
+    
+    <div class="details">
+        <strong>Contact:</strong> {{ content_object.lead.contact_name }}<br>
+        {% if content_object.lead.company_name %}
+        <strong>Company:</strong> {{ content_object.lead.company_name }}<br>
+        {% endif %}
+        <strong>Phone:</strong> {{ content_object.lead.phone_number }}<br>
+        <strong>Originally Scheduled:</strong> {{ content_object.scheduled_date|date:"F d, Y at g:i A" }}<br>
+        <strong>Days Overdue:</strong> {{ data.days_overdue }}<br>
+        <strong>Type:</strong> {{ content_object.get_followup_type_display }}<br>
+        {% if content_object.notes %}
+        <strong>Notes:</strong> {{ content_object.notes }}<br>
+        {% endif %}
+    </div>
+    
+    <p>Please take action immediately:</p>
+    <ul>
+        <li>Complete the follow-up and update the status</li>
+        <li>Reschedule if needed</li>
+        <li>Update the lead status if appropriate</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block action_buttons %}
+<div style="text-align: center; margin: 20px 0;">
+    <a href="{{ request.build_absolute_uri }}/leads/{{ content_object.lead.id }}/" class="button">
+        Update Follow-up Status
+    </a>
+</div>
+{% endblock %}

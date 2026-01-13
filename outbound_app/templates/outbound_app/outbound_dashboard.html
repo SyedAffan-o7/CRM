@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Outbound Dashboard - CRM System{% endblock %}
+{% block page_title %}Outbound Analytics Dashboard{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{% url 'outbound_app:outbound_list' %}" class="btn btn-outline-primary">
+        <i class="bi bi-list"></i> View Activities
+    </a>
+    <a href="{% url 'outbound_app:outbound_add' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Activity
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="from_date" class="form-label">From Date</label>
+                <input type="date" class="form-control" id="from_date" name="from_date" value="{{ from_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-4">
+                <label for="to_date" class="form-label">To Date</label>
+                <input type="date" class="form-control" id="to_date" name="to_date" value="{{ to_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-4">
+                <label for="salesperson" class="form-label">Salesperson</label>
+                <select class="form-select" id="salesperson" name="salesperson">
+                    <option value="">All Salespeople</option>
+                    {% for person in salespeople %}
+                        <option value="{{ person.id }}" {% if selected_salesperson == person.id|stringformat:'s' %}selected{% endif %}>
+                            {{ person.get_full_name|default:person.username }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-funnel"></i> Apply Filters
+                </button>
+                <a href="{% url 'outbound_app:outbound_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Key Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h2 class="text-primary">{{ total_activities }}</h2>
+                <p class="card-text">Total Activities</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h2 class="text-success">{{ unique_customers_contacted }}</h2>
+                <p class="card-text">Customers Contacted</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h2 class="text-info">{{ total_enquiries_generated }}</h2>
+                <p class="card-text">Enquiries Generated</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h2 class="text-warning">
+                    {% if unique_customers_contacted > 0 %}
+                        {{ total_enquiries_generated|floatformat:0 }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </h2>
+                <p class="card-text">Conversion Rate</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Salesperson Performance -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-people"></i> Salesperson Performance
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if salesperson_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Salesperson</th>
+                                    <th>Activities</th>
+                                    <th>Customers</th>
+                                    <th>Enquiries</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in salesperson_stats %}
+                                <tr>
+                                    <td>
+                                        {% if stat.created_by__first_name %}
+                                            {{ stat.created_by__first_name }} {{ stat.created_by__last_name }}
+                                        {% else %}
+                                            {{ stat.created_by__username }}
+                                        {% endif %}
+                                    </td>
+                                    <td><span class="badge bg-primary">{{ stat.total_activities }}</span></td>
+                                    <td><span class="badge bg-success">{{ stat.unique_customers }}</span></td>
+                                    <td><span class="badge bg-info">{{ stat.enquiries_generated }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No activity data available for the selected period.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Method Breakdown -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart"></i> Contact Methods
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if method_stats %}
+                    {% for method in method_stats %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>
+                            {% if method.method == 'call' %}
+                                <i class="bi bi-whatsapp text-primary"></i> Phone Call
+                            {% elif method.method == 'whatsapp' %}
+                                <i class="bi bi-whatsapp text-success"></i> WhatsApp
+                            {% elif method.method == 'email' %}
+                                <i class="bi bi-envelope text-info"></i> Email
+                            {% elif method.method == 'meeting' %}
+                                <i class="bi bi-calendar text-warning"></i> Meeting
+                            {% else %}
+                                <i class="bi bi-chat text-secondary"></i> {{ method.method|title }}
+                            {% endif %}
+                        </span>
+                        <span class="badge bg-secondary">{{ method.count }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No method data available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Activity Trend -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-graph-up"></i> Daily Activity Trend (Last 7 Days)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for day in daily_stats %}
+                    <div class="col text-center">
+                        <div class="mb-2">
+                            <div class="bg-primary text-white rounded p-2">
+                                <strong>{{ day.count }}</strong>
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ day.date|date:'M d' }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Activities -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history"></i> Recent Activities
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_activities %}
+                    {% for activity in recent_activities %}
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="me-3">
+                            {% if activity.method == 'call' %}
+                                <i class="bi bi-whatsapp text-primary"></i>
+                            {% elif activity.method == 'whatsapp' %}
+                                <i class="bi bi-whatsapp text-success"></i>
+                            {% elif activity.method == 'email' %}
+                                <i class="bi bi-envelope text-info"></i>
+                            {% else %}
+                                <i class="bi bi-chat text-secondary"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ activity.contact.full_name }}</strong>
+                                <small class="text-muted">{{ activity.created_at|timesince }} ago</small>
+                            </div>
+                            <p class="mb-1 text-muted">{{ activity.summary|truncatechars:60 }}</p>
+                            <small class="text-muted">by {% if activity.created_by %}{{ activity.created_by.get_full_name|default:activity.created_by.username }}{% else %}-{% endif %}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No recent activities.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Next Steps -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-calendar-check"></i> Upcoming Next Steps
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if upcoming_next_steps %}
+                    {% for activity in upcoming_next_steps %}
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="me-3">
+                            <i class="bi bi-calendar-event text-warning"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ activity.contact.full_name }}</strong>
+                                <small class="text-muted">{{ activity.next_step_date|date:'M d, Y' }}</small>
+                            </div>
+                            <p class="mb-1 text-muted">{{ activity.get_next_step_display }}</p>
+                            <small class="text-muted">by {% if activity.created_by %}{{ activity.created_by.get_full_name|default:activity.created_by.username }}{% else %}-{% endif %}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No upcoming next steps scheduled.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Date Range Display -->
+<div class="text-center text-muted mt-3">
+    <small>Showing data for: {{ date_range_display }}</small>
+</div>
+{% endblock %}

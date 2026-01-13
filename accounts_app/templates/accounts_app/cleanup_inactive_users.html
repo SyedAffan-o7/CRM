@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - CRM System{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'accounts_app:user_management' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Back to Users
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-trash"></i> Cleanup Inactive Users
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Warning -->
+                <div class="alert alert-warning">
+                    <h5 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle"></i> Bulk Cleanup Operation
+                    </h5>
+                    <p class="mb-2">
+                        This will permanently delete ALL inactive users (both regular users and superusers) from the system.
+                        Only active users will remain.
+                    </p>
+                    <p class="mb-0">
+                        <strong>You will be excluded from deletion</strong> to prevent accidental self-deletion.
+                    </p>
+                </div>
+
+                <!-- Statistics -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="text-primary">{{ inactive_count }}</h3>
+                                <p class="mb-0">Inactive Users</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="text-info">{{ inactive_superusers.count }}</h3>
+                                <p class="mb-0">Inactive Superusers</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="text-success">{{ inactive_regular_users.count }}</h3>
+                                <p class="mb-0">Inactive Regular Users</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if inactive_count > 0 %}
+                <!-- Users to be deleted -->
+                <div class="card mb-4">
+                    <div class="card-header bg-danger text-white">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-people"></i> Users to be Deleted ({{ inactive_count }} total):
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% if inactive_superusers %}
+                            <div class="col-md-6">
+                                <h6 class="text-danger">Inactive Superusers:</h6>
+                                <ul class="list-group">
+                                    {% for user in inactive_superusers %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        {{ user.username }}
+                                        <span class="badge bg-danger">Superuser</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+
+                            {% if inactive_regular_users %}
+                            <div class="col-md-6">
+                                <h6 class="text-warning">Inactive Regular Users:</h6>
+                                <ul class="list-group">
+                                    {% for user in inactive_regular_users %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        {{ user.username }}
+                                        <span class="badge bg-warning">Regular</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- What will happen -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-info-circle"></i> What will happen:
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0">
+                            <li>All inactive user accounts will be permanently deleted</li>
+                            <li>User profiles and role assignments will be removed</li>
+                            <li>All associated permissions will be deleted</li>
+                            <li class="text-success">All active users will remain untouched</li>
+                            <li class="text-muted">Note: Activities, leads, and other records created by deleted users will be preserved but will show as "deleted user"</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Confirmation Form -->
+                <form method="post" id="cleanupForm">
+                    {% csrf_token %}
+
+                    <div class="mb-4">
+                        <label for="confirmText" class="form-label fw-bold">
+                            Type "<span class="text-danger">DELETE INACTIVE USERS</span>" to confirm:
+                        </label>
+                        <input type="text"
+                               class="form-control form-control-lg"
+                               id="confirmText"
+                               placeholder="Type confirmation text here"
+                               required>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit"
+                                class="btn btn-danger btn-lg"
+                                id="cleanupButton"
+                                disabled>
+                            <i class="bi bi-trash"></i> Yes, Delete All {{ inactive_count }} Inactive Users
+                        </button>
+                        <a href="{% url 'accounts_app:user_management' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel and Go Back
+                        </a>
+                    </div>
+                </form>
+                {% else %}
+                <!-- No inactive users -->
+                <div class="text-center py-5">
+                    <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 text-success">All Users Are Active!</h4>
+                    <p class="text-muted">There are no inactive users to clean up.</p>
+                    <a href="{% url 'accounts_app:user_management' %}" class="btn btn-primary">
+                        <i class="bi bi-arrow-left"></i> Back to User Management
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmInput = document.getElementById('confirmText');
+    const cleanupButton = document.getElementById('cleanupButton');
+    const expectedText = 'DELETE INACTIVE USERS';
+    const cleanupForm = document.getElementById('cleanupForm');
+
+    confirmInput.addEventListener('input', function() {
+        if (this.value.toUpperCase() === expectedText) {
+            cleanupButton.disabled = false;
+            cleanupButton.classList.remove('btn-secondary');
+            cleanupButton.classList.add('btn-danger');
+        } else {
+            cleanupButton.disabled = true;
+            cleanupButton.classList.remove('btn-danger');
+            cleanupButton.classList.add('btn-secondary');
+        }
+    });
+
+    cleanupForm.addEventListener('submit', function(e) {
+        if (confirmInput.value.toUpperCase() !== expectedText) {
+            e.preventDefault();
+            alert('Confirmation text does not match. Please type "DELETE INACTIVE USERS" exactly to confirm.');
+            return false;
+        }
+
+        const confirmed = confirm(
+            'FINAL WARNING: Are you absolutely sure you want to delete ALL inactive users?\n\n' +
+            'This action CANNOT be undone and will affect {{ inactive_count }} users!'
+        );
+
+        if (!confirmed) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/outbound.css' %}">
+{% endblock %}
+
+{% block title %}Customers - AAA CRM{% endblock %}
+{% block page_title %}Customers Management{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{% url 'crm_app:contact_add' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add New Customer
+    </a>
+    {% if user.is_superuser %}
+    <a href="{% url 'customers_app:customer_import' %}" class="btn btn-outline-primary">
+        <i class="bi bi-upload"></i> Import Customers
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Search -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-8">
+                <label for="search" class="form-label">Search Customers</label>
+                <input type="text" class="form-control" id="search" name="search" value="{{ request.GET.search }}" placeholder="Name, phone, company...">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                <a href="{% url 'crm_app:contact_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Contacts Table -->
+<div class="card">
+    <div class="card-body">
+        {% if contacts %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Company</th>
+                            <th>Role</th>
+                            <th>WhatsApp</th>
+                            <th>Created</th>
+                            <th class="text-nowrap">Quick Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contact in contacts %}
+                        <tr>
+                            <td>
+                                <div class="hover-card-container">
+                                    <span class="hover-trigger"><strong>{{ contact.full_name }}</strong></span>
+                                    <div class="hover-card shadow-sm">
+                                        <div class="actions">
+                                            <!-- Call -->
+                                            <a href="#" class="btn btn-outline-primary" title="Call"
+                                               data-action="comm"
+                                               data-method="PHONE"
+                                               data-contact-id="{{ contact.pk }}"
+                                               data-contact-name="{{ contact.full_name }}"
+                                               data-phone="{{ contact.phone_number }}"
+                                               data-whatsapp="{{ contact.whatsapp_number }}">
+                                                <i class="bi bi-whatsapp"></i>
+                                            </a>
+                                            <!-- WhatsApp -->
+                                            <a href="#" class="btn btn-outline-success" title="WhatsApp"
+                                               data-action="comm"
+                                               data-method="WHATSAPP"
+                                               data-contact-id="{{ contact.pk }}"
+                                               data-contact-name="{{ contact.full_name }}"
+                                               data-phone="{{ contact.phone_number }}"
+                                               data-whatsapp="{{ contact.whatsapp_number }}">
+                                                <i class="bi bi-whatsapp"></i>
+                                            </a>
+                                            <!-- Email -->
+                                            <a href="#" class="btn btn-outline-secondary" title="Email"
+                                               data-action="comm"
+                                               data-method="EMAIL"
+                                               data-contact-id="{{ contact.pk }}"
+                                               data-contact-name="{{ contact.full_name }}"
+                                               data-phone="{{ contact.phone_number }}"
+                                               data-whatsapp="{{ contact.whatsapp_number }}"
+                                               data-email="{{ contact.email }}">
+                                                <i class="bi bi-envelope"></i>
+                                            </a>
+                                            <!-- Log Activity -->
+                                            <a href="#" class="btn btn-outline-dark" title="Log Activity"
+                                               data-action="comm"
+                                               data-method="PHONE"
+                                               data-contact-id="{{ contact.pk }}"
+                                               data-contact-name="{{ contact.full_name }}"
+                                               data-phone="{{ contact.phone_number }}"
+                                               data-whatsapp="{{ contact.whatsapp_number }}"
+                                               data-email="{{ contact.email }}">
+                                                <i class="bi bi-plus-circle"></i>
+                                            </a>
+                                            <!-- Create Enquiry -->
+                                            <a href="{% url 'crm_app:lead_add' %}?contact_id={{ contact.pk }}" class="btn btn-outline-info" title="Create Enquiry">
+                                                <i class="bi bi-person-plus-fill"></i>
+                                            </a>
+                                            <!-- Timeline -->
+                                            <a href="{% url 'outbound_app:customer_outbound' contact.pk %}" class="btn btn-outline-secondary" title="Timeline">
+                                                <i class="bi bi-clock-history"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <a
+                                    href="https://wa.me/{{ contact.phone_number|cut:' '|cut:'+'|cut:'-'|cut:'('|cut:')'|cut:'.'|cut:'/' }}"
+                                    class="me-2 text-success"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="Open WhatsApp chat"
+                                    aria-label="Open WhatsApp chat"
+                                >
+                                    <i class="bi bi-whatsapp"></i>
+                                </a>
+                                {{ contact.phone_number }}
+                            </td>
+                            <td>
+                                {% if contact.email %}
+                                    <a href="mailto:{{ contact.email }}"><i class="bi bi-envelope"></i> {{ contact.email }}</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ contact.company.company_name|default:"-" }}</td>
+                            <td>{{ contact.role_position|default:"-" }}</td>
+                            <td>
+                                {% if contact.whatsapp_number %}
+                                    <i class="bi bi-whatsapp text-success"></i> {{ contact.whatsapp_number }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ contact.created_date|date:"M d, Y" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Actions">
+                                    <!-- Call -->
+                                    <a href="#" class="btn btn-outline-primary" title="Call"
+                                       data-action="comm"
+                                       data-method="PHONE"
+                                       data-contact-id="{{ contact.pk }}"
+                                       data-contact-name="{{ contact.full_name }}"
+                                       data-phone="{{ contact.phone_number }}"
+                                       data-whatsapp="{{ contact.whatsapp_number }}">
+                                        <i class="bi bi-whatsapp"></i>
+                                    </a>
+                                    <!-- WhatsApp -->
+                                    <a href="#" class="btn btn-outline-success" title="WhatsApp"
+                                       data-action="comm"
+                                       data-method="WHATSAPP"
+                                       data-contact-id="{{ contact.pk }}"
+                                       data-contact-name="{{ contact.full_name }}"
+                                       data-phone="{{ contact.phone_number }}"
+                                       data-whatsapp="{{ contact.whatsapp_number }}">
+                                        <i class="bi bi-whatsapp"></i>
+                                    </a>
+                                    <!-- Email -->
+                                    <a href="#" class="btn btn-outline-secondary" title="Email"
+                                       data-action="comm"
+                                       data-method="EMAIL"
+                                       data-contact-id="{{ contact.pk }}"
+                                       data-contact-name="{{ contact.full_name }}"
+                                       data-phone="{{ contact.phone_number }}"
+                                       data-whatsapp="{{ contact.whatsapp_number }}"
+                                       data-email="{{ contact.email }}">
+                                        <i class="bi bi-envelope"></i>
+                                    </a>
+                                    <!-- Log Activity -->
+                                    <a href="#" class="btn btn-outline-dark" title="Log Activity"
+                                       data-action="comm"
+                                       data-method="PHONE"
+                                       data-contact-id="{{ contact.pk }}"
+                                       data-contact-name="{{ contact.full_name }}"
+                                       data-phone="{{ contact.phone_number }}"
+                                       data-whatsapp="{{ contact.whatsapp_number }}"
+                                       data-email="{{ contact.email }}">
+                                        <i class="bi bi-plus-circle"></i>
+                                    </a>
+                                    <!-- Create Enquiry -->
+                                    <a href="{% url 'crm_app:lead_add' %}?contact_id={{ contact.pk }}" class="btn btn-outline-info" title="Create Enquiry">
+                                        <i class="bi bi-person-plus-fill"></i>
+                                    </a>
+                                    <!-- Timeline -->
+                                    <a href="{% url 'outbound_app:customer_outbound' contact.pk %}" class="btn btn-outline-secondary" title="Timeline">
+                                        <i class="bi bi-clock-history"></i>
+                                    </a>
+                                    <!-- View -->
+                                    <a href="{% url 'crm_app:contact_detail' contact.pk %}" class="btn btn-outline-primary" title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-people text-muted" style="font-size: 4rem;"></i>
+                <h4 class="mt-3 text-muted">No customers found</h4>
+                <p class="text-muted">Start by adding your first customer to the system.</p>
+                <a href="{% url 'crm_app:contact_add' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Add New Customer
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Log Activity Modal -->
+<div class="modal fade" id="logActivityModal" tabindex="-1" aria-labelledby="logActivityTitle" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="logActivityTitle">Log Activity</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-end mb-3">
+          <a id="openCommBtn" href="#" target="_blank" class="btn btn-outline-primary">
+            <i id="openCommIcon" class="bi bi-whatsapp me-1"></i> Open
+          </a>
+        </div>
+        <form id="logActivityForm" method="post" data-log-url="{% url 'customers_app:log_activity_for_contact' pk=0 %}">
+          {% csrf_token %}
+          <input type="hidden" name="contact" value="">
+          <div class="row g-3 align-items-end mb-2">
+            <div class="col-md-6">
+              <label class="form-label">Template (optional)</label>
+              <select id="templateSelect" class="form-select">
+                <option value="">-- No template --</option>
+              </select>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Method</label>
+              <select name="method" class="form-select" required>
+                <option value="PHONE">Phone Call</option>
+                <option value="WHATSAPP">WhatsApp</option>
+                <option value="EMAIL">Email</option>
+                <option value="SMS">SMS</option>
+                <option value="MEETING">In-Person Meeting</option>
+                <option value="VIDEO_CALL">Video Call</option>
+                <option value="LINKEDIN">LinkedIn Message</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Outcome</label>
+              <select name="outcome" class="form-select">
+                <option value="">-- Select --</option>
+                <option value="POSITIVE">Positive</option>
+                <option value="NEUTRAL">Neutral</option>
+                <option value="NEGATIVE">Negative</option>
+                <option value="NO_RESPONSE">No Response</option>
+                <option value="CALLBACK_REQUESTED">Callback Requested</option>
+                <option value="NOT_INTERESTED">Not Interested</option>
+                <option value="INTERESTED">Showed Interest</option>
+                <option value="MEETING_SCHEDULED">Meeting Scheduled</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Next Step</label>
+              <select name="next_step" class="form-select">
+                <option value="NONE">None</option>
+                <option value="FOLLOW_UP">Schedule Follow-up</option>
+                <option value="SEND_CATALOGUE">Send Product Catalogue</option>
+                <option value="SEND_QUOTE">Send Quotation</option>
+                <option value="SEND_PROPOSAL">Send Proposal</option>
+                <option value="SCHEDULE_DEMO">Schedule Product Demo</option>
+                <option value="SCHEDULE_MEETING">Schedule Meeting</option>
+                <option value="CREATE_ENQUIRY">Create Enquiry</option>
+                <option value="CONVERT_LEAD">Convert to Lead</option>
+                <option value="CLOSE_WON">Mark as Won</option>
+                <option value="CLOSE_LOST">Mark as Lost</option>
+              </select>
+            </div>
+            <div class="col-md-12">
+              <label class="form-label">Summary</label>
+              <textarea name="summary" class="form-control" rows="3" placeholder="Summary of conversation"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Next Step Date</label>
+              <input type="datetime-local" name="next_step_date" class="form-control" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Follow-up Reminder</label>
+              <input type="datetime-local" name="follow_up_reminder" class="form-control" />
+            </div>
+          </div>
+          <div class="mt-3 d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Activity</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/outbound.js' %}"></script>
+{% endblock %}

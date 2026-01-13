@@ -1,0 +1,448 @@
+{% extends 'base.html' %}
+
+{% block title %}Media Gallery - CRM System{% endblock %}
+{% block page_title %}Media Gallery{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Filters Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="date_filter" class="form-label fw-semibold">Date Filter</label>
+                            <select name="date_filter" id="date_filter" class="form-select">
+                                <option value="">All Dates</option>
+                                <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                                <option value="week" {% if date_filter == 'week' %}selected{% endif %}>Last 7 Days</option>
+                                <option value="month" {% if date_filter == 'month' %}selected{% endif %}>Last 30 Days</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="salesperson_filter" class="form-label fw-semibold">Salesperson</label>
+                            <select name="salesperson_filter" id="salesperson_filter" class="form-select">
+                                <option value="">All Salespeople</option>
+                                <option value="unassigned" {% if salesperson_filter == 'unassigned' %}selected{% endif %}>Unassigned</option>
+                                {% for salesperson in salespeople %}
+                                <option value="{{ salesperson.id }}" {% if salesperson_filter == salesperson.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ salesperson.get_full_name|default:salesperson.username }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="bi bi-filter"></i> Apply Filters
+                            </button>
+                            <a href="{% url 'media_app:media_gallery' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 class="text-primary">{{ total_images }}</h3>
+                            <p class="text-muted mb-0">Total Images</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-success">{{ page_obj.number }}</h3>
+                            <p class="text-muted mb-0">Current Page</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-info">{{ page_obj.paginator.num_pages }}</h3>
+                            <p class="text-muted mb-0">Total Pages</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-warning">{{ images|length }}</h3>
+                            <p class="text-muted mb-0">Images on Page</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Gallery -->
+    <div class="row g-3 gallery-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem;">
+        {% for image in images %}
+        <div class="image-card-wrapper" style="width: 100%;">
+            <div class="card h-100 image-card">
+                <div class="image-container">
+                    <img src="{{ image.image_url }}"
+                         class="card-img-top gallery-image {% if image.image_type == 'google_drive' %}google-drive-gallery-image{% endif %}"
+                         alt="{{ image.client_name }}"
+                         loading="lazy"
+                         {% if image.image_type == 'google_drive' %}onerror="handleGalleryImageError(this)"{% endif %}>
+                    <div class="image-overlay">
+                        <a href="{% url 'crm_app:lead_detail' pk=image.lead_id %}"
+                           class="btn btn-primary btn-sm">
+                            <i class="bi bi-eye"></i> View Lead
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-2">
+                    <h6 class="card-title mb-1 text-truncate" title="{{ image.client_name }}">
+                        <i class="bi bi-person"></i> {{ image.client_name }}
+                    </h6>
+                    {% if image.company_name %}
+                    <p class="card-text small text-muted mb-1">
+                        <i class="bi bi-building"></i> {{ image.company_name }}
+                    </p>
+                    {% endif %}
+                    <p class="card-text small mb-1">
+                        <span class="badge bg-primary">
+                            <i class="bi bi-tag"></i> {{ image.category_name }}
+                        </span>
+                    </p>
+                    <p class="card-text small mb-1">
+                        <span class="badge bg-success">
+                            <i class="bi bi-box"></i> {{ image.product_name }}
+                        </span>
+                    </p>
+                    <p class="card-text small mb-1">
+                        <i class="bi bi-person-check"></i>
+                        <span class="{% if image.salesperson == 'Unassigned' %}text-warning{% else %}text-info{% endif %}">
+                            {{ image.salesperson }}
+                        </span>
+                    </p>
+                    <p class="card-text small text-muted mb-0">
+                        <i class="bi bi-calendar"></i> {{ image.created_date|date:"M d, Y" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12" style="grid-column: 1 / -1;">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-images display-1 text-muted mb-3"></i>
+                    <h4 class="text-muted">No Images Found</h4>
+                    <p class="text-muted">No images match your current filters. Try adjusting your search criteria.</p>
+                    {% if date_filter or salesperson_filter %}
+                    <a href="{% url 'media_app:media_gallery' %}" class="btn btn-primary">
+                        <i class="bi bi-x-circle"></i> Clear Filters
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Image gallery pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if date_filter %}date_filter={{ date_filter }}&{% endif %}{% if salesperson_filter %}salesperson_filter={{ salesperson_filter }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                            <i class="bi bi-chevron-left"></i> Previous
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            <i class="bi bi-chevron-left"></i> Previous
+                        </span>
+                    </li>
+                    {% endif %}
+
+                    {% for page_num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == page_num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% elif page_num > page_obj.number|add:'-3' and page_num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if date_filter %}date_filter={{ date_filter }}&{% endif %}{% if salesperson_filter %}salesperson_filter={{ salesperson_filter }}&{% endif %}page={{ page_num }}">{{ page_num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if date_filter %}date_filter={{ date_filter }}&{% endif %}{% if salesperson_filter %}salesperson_filter={{ salesperson_filter }}&{% endif %}page={{ page_obj.next_page_number }}">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% else %}
+    <!-- Single page indicator -->
+    <div class="row mt-3">
+        <div class="col-12 text-center">
+            <small class="text-muted">
+                <i class="bi bi-info-circle"></i> Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                {% if page_obj.paginator.count > 0 %}
+                    ({{ page_obj.paginator.count }} total image{{ page_obj.paginator.count|pluralize }})
+                {% endif %}
+            </small>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.image-card-wrapper {
+    display: flex;
+}
+
+.image-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #dee2e6;
+    width: 100%; /* Ensure card takes full width of grid cell */
+    max-width: 100%; /* Prevent overflow */
+}
+
+.image-card .card-body {
+    background: #f8f9fa;
+    min-height: 140px; /* keep metadata block uniform */
+    overflow: hidden; /* Prevent content overflow */
+}
+
+.image-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.image-container {
+    position: relative;
+    overflow: hidden;
+    height: 200px; /* default desktop height */
+}
+
+.gallery-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.image-card:hover .gallery-image {
+    transform: scale(1.05);
+}
+
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.image-card:hover .image-overlay {
+    opacity: 1;
+}
+
+.card-body {
+    background: #f8f9fa;
+    min-height: 140px; /* keep metadata block uniform */
+}
+
+.badge {
+    font-size: 0.7em;
+}
+
+/* Responsive Grid Layout */
+.gallery-grid {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 1rem !important;
+    width: 100%;
+}
+
+.gallery-grid > .image-card-wrapper {
+    width: 100%;
+    min-width: 0; /* Allow flex shrinking */
+}
+
+@media (min-width: 1200px) {
+    /* 5 columns on extra large screens */
+    .gallery-grid {
+        grid-template-columns: repeat(5, 1fr) !important;
+    }
+}
+
+@media (max-width: 1199px) and (min-width: 992px) {
+    /* 4 columns on large screens */
+    .gallery-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+}
+
+@media (max-width: 991px) and (min-width: 768px) {
+    /* 3 columns on medium screens */
+    .gallery-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+
+@media (max-width: 767px) and (min-width: 576px) {
+    /* 2 columns on small screens */
+    .gallery-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 575px) {
+    /* 1 column on extra small screens */
+    .gallery-grid {
+        grid-template-columns: repeat(1, 1fr) !important;
+    }
+}
+
+@media (max-width: 992px) {
+    .image-container { height: 180px; }
+}
+
+@media (max-width: 768px) {
+    .image-container { height: 160px; }
+
+    .card-title {
+        font-size: 0.9rem;
+    }
+
+    .card-text {
+        font-size: 0.8rem;
+    }
+}
+
+/* Custom pagination styling */
+.pagination .page-link {
+    color: #007bff;
+    border-color: #dee2e6;
+}
+
+.pagination .page-link:hover {
+    color: #0056b3;
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+</style>
+
+<script>
+// Handle Google Drive gallery image errors
+window.handleGalleryImageError = function(img) {
+    console.error('Google Drive gallery image failed to load:', img.src);
+
+    // Try thumbnail URL as fallback for direct URLs
+    const currentSrc = img.src;
+    if (currentSrc.includes('drive.google.com/uc?')) {
+        // Extract file ID from uc URL
+        const idMatch = currentSrc.match(/id=([^&]+)/);
+        if (idMatch) {
+            const fileId = idMatch[1];
+            const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+            console.log('Retrying with thumbnail URL:', thumbnailUrl);
+            img.src = thumbnailUrl;
+            img.onerror = function() {
+                // If thumbnail also fails, show error
+                showFinalError(img, currentSrc);
+            };
+            return;
+        }
+    }
+
+    // If already a thumbnail URL or no file ID found, show error
+    showFinalError(img, currentSrc);
+};
+
+// Show final error message when all attempts fail
+function showFinalError(img, originalSrc) {
+    // Create a more informative error display
+    const container = img.parentNode;
+    const fileId = originalSrc.includes('id=') ? originalSrc.split('id=')[1].split('&')[0] : 'unknown';
+    const originalUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+
+    container.innerHTML = `
+        <div class="d-flex align-items-center justify-content-center h-100 bg-light">
+            <div class="text-center text-muted p-2">
+                <i class="bi bi-exclamation-triangle display-4 text-warning"></i>
+                <p class="small mt-2 mb-1"><strong>Image Unavailable</strong></p>
+                <p class="small mb-2">This Google Drive image cannot be displayed.</p>
+                <a href="${originalUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-google"></i> Open in Google Drive
+                </a>
+                <p class="small text-muted mt-2">
+                    <em>Possible causes: File not shared publicly, permissions changed, or file deleted.</em>
+                </p>
+            </div>
+        </div>
+    `;
+}
+
+// Add retry mechanism for Google Drive images
+window.retryGoogleDriveImage = function(img) {
+    // Try alternative Google Drive URL formats
+    const currentSrc = img.src;
+    const fileId = currentSrc.includes('id=') ? currentSrc.split('id=')[1].split('&')[0] : null;
+
+    if (!fileId) return;
+
+    // Try thumbnail version first (more reliable)
+    const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+    console.log('Retrying with thumbnail URL:', thumbnailUrl);
+
+    img.src = thumbnailUrl;
+    img.onerror = function() {
+        // If thumbnail fails, show error
+        showFinalError(img, currentSrc);
+    };
+};
+
+// Initialize retry for Google Drive images on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const googleDriveImages = document.querySelectorAll('.google-drive-gallery-image');
+    googleDriveImages.forEach(img => {
+        // Add a loading timeout - if image doesn't load within 5 seconds, try alternative
+        setTimeout(() => {
+            if (!img.complete || img.naturalHeight === 0) {
+                console.log('Image failed to load within timeout, retrying:', img.src);
+                window.retryGoogleDriveImage(img);
+            }
+        }, 5000);
+
+        // Also add retry on click if user wants to try again
+        img.addEventListener('error', function() {
+            setTimeout(() => {
+                window.retryGoogleDriveImage(img);
+            }, 1000);
+        });
+    });
+});
+</script>
+{% endblock %}

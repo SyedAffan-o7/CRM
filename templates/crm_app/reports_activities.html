@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Activities Report - CRM System{% endblock %}
+{% block page_title %}Activities Report{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'crm_app:activity_list' %}" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-clock-history"></i> View Activities Log
+</a>
+<a href="{% url 'outbound_app:outbound_dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2">
+    <i class="bi bi-graph-up"></i> Outbound Dashboard
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase mb-2">Overview</h6>
+                <p class="mb-1 small text-muted">This section is reserved for high-level reports based on Activities.</p>
+                <p class="mb-0 small text-muted">Use the Activities Log for detailed entries, or the Outbound Dashboard for deep analytics.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8 mb-3">
+        <div class="card shadow-sm border-0 h-100 d-flex align-items-center justify-content-center text-center p-4">
+            <div>
+                <i class="bi bi-clipboard-data text-primary" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 mb-2">Activities Reporting</h5>
+                <p class="text-muted small mb-3">
+                    Structured reports and charts can be added here later (e.g. activity counts per user, per type, per period).
+                </p>
+                <a href="{% url 'crm_app:activity_list' %}" class="btn btn-primary btn-sm me-2">
+                    <i class="bi bi-clock-history"></i> Open Activities Log
+                </a>
+                <a href="{% url 'outbound_app:outbound_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-graph-up"></i> Open Outbound Analytics
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

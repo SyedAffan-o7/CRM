@@ -1,0 +1,53 @@
+{% extends "notifications_app/emails/base_email.html" %}
+
+{% block title %}Lead Stage Updated - AAA CRM{% endblock %}
+
+{% block header_subtitle %}Lead Stage Change{% endblock %}
+
+{% block content %}
+<div class="priority-medium">
+    <h2>📈 Lead Stage Updated</h2>
+    <p>Hello {{ recipient.get_full_name|default:recipient.username }},</p>
+    
+    <p>The stage for one of your leads has been updated:</p>
+    
+    <div class="details">
+        <strong>Contact:</strong> {{ content_object.contact_name }}<br>
+        {% if content_object.company_name %}
+        <strong>Company:</strong> {{ content_object.company_name }}<br>
+        {% endif %}
+        <strong>Phone:</strong> {{ content_object.phone_number }}<br>
+        <strong>Previous Stage:</strong> {{ data.old_stage|default:"Unknown" }}<br>
+        <strong>New Stage:</strong> {{ data.stage_display }}<br>
+        <strong>Updated:</strong> {{ content_object.updated_date|date:"F d, Y at g:i A" }}<br>
+    </div>
+    
+    {% if data.new_stage == 'won' %}
+    <div class="priority-high">
+        <p>🎉 <strong>Congratulations!</strong> This lead has been marked as WON!</p>
+    </div>
+    {% elif data.new_stage == 'lost' %}
+    <div class="priority-medium">
+        <p>📋 This lead has been marked as LOST. Please review for lessons learned.</p>
+    </div>
+    {% elif data.new_stage == 'proforma_invoice_sent' %}
+    <p>📄 A proforma invoice has been sent. Follow up to ensure receipt and address any questions.</p>
+    {% elif data.new_stage == 'invoice_sent' %}
+    <p>💰 An invoice has been sent. Monitor for payment and follow up as needed.</p>
+    {% endif %}
+    
+    {% if content_object.next_action %}
+    <div class="details">
+        <strong>Next Action:</strong> {{ content_object.next_action }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block action_buttons %}
+<div style="text-align: center; margin: 20px 0;">
+    <a href="{{ request.build_absolute_uri }}/leads/{{ content_object.id }}/" class="button">
+        View Lead Details
+    </a>
+</div>
+{% endblock %}

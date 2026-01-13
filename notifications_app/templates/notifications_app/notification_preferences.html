@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notification Preferences - AAA CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-gear me-2"></i>Notification Preferences
+                    </h2>
+                    <p class="text-muted mb-0">Customize how you receive notifications</p>
+                </div>
+                <a href="{% url 'notifications_app:notification_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Notifications
+                </a>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    <!-- Email Notifications -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-envelope me-2"></i>Email Notifications
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="email_follow_ups" 
+                                           id="email_follow_ups" {% if preferences.email_follow_ups %}checked{% endif %}>
+                                    <label class="form-check-label" for="email_follow_ups">
+                                        <strong>Follow-up Reminders</strong>
+                                        <small class="d-block text-muted">Get notified about upcoming and overdue follow-ups</small>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="email_lead_changes" 
+                                           id="email_lead_changes" {% if preferences.email_lead_changes %}checked{% endif %}>
+                                    <label class="form-check-label" for="email_lead_changes">
+                                        <strong>Lead Updates</strong>
+                                        <small class="d-block text-muted">Stage changes, status updates, and new leads</small>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="email_assignments" 
+                                           id="email_assignments" {% if preferences.email_assignments %}checked{% endif %}>
+                                    <label class="form-check-label" for="email_assignments">
+                                        <strong>New Assignments</strong>
+                                        <small class="d-block text-muted">When leads or follow-ups are assigned to you</small>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="email_user_changes" 
+                                           id="email_user_changes" {% if preferences.email_user_changes %}checked{% endif %}>
+                                    <label class="form-check-label" for="email_user_changes">
+                                        <strong>Account Changes</strong>
+                                        <small class="d-block text-muted">Role changes and account updates</small>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="email_system_alerts" 
+                                           id="email_system_alerts" {% if preferences.email_system_alerts %}checked{% endif %}>
+                                    <label class="form-check-label" for="email_system_alerts">
+                                        <strong>System Alerts</strong>
+                                        <small class="d-block text-muted">Important system notifications and errors</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- In-App Notifications -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-bell me-2"></i>In-App Notifications
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="app_follow_ups" 
+                                           id="app_follow_ups" {% if preferences.app_follow_ups %}checked{% endif %}>
+                                    <label class="form-check-label" for="app_follow_ups">
+                                        <strong>Follow-up Reminders</strong>
+                                        <small class="d-block text-muted">Show in notification panel</small>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="app_lead_changes" 
+                                           id="app_lead_changes" {% if preferences.app_lead_changes %}checked{% endif %}>
+                                    <label class="form-check-label" for="app_lead_changes">
+                                        <strong>Lead Updates</strong>
+                                        <small class="d-block text-muted">Show in notification panel</small>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="app_assignments" 
+                                           id="app_assignments" {% if preferences.app_assignments %}checked{% endif %}>
+                                    <label class="form-check-label" for="app_assignments">
+                                        <strong>New Assignments</strong>
+                                        <small class="d-block text-muted">Show in notification panel</small>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="app_user_changes" 
+                                           id="app_user_changes" {% if preferences.app_user_changes %}checked{% endif %}>
+                                    <label class="form-check-label" for="app_user_changes">
+                                        <strong>Account Changes</strong>
+                                        <small class="d-block text-muted">Show in notification panel</small>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="app_system_alerts" 
+                                           id="app_system_alerts" {% if preferences.app_system_alerts %}checked{% endif %}>
+                                    <label class="form-check-label" for="app_system_alerts">
+                                        <strong>System Alerts</strong>
+                                        <small class="d-block text-muted">Show in notification panel</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Digest Settings -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-newspaper me-2"></i>Summary Digests
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="daily_digest" 
+                                                   id="daily_digest" {% if preferences.daily_digest %}checked{% endif %}>
+                                            <label class="form-check-label" for="daily_digest">
+                                                <strong>Daily Summary</strong>
+                                                <small class="d-block text-muted">Daily email with your CRM activity summary</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="weekly_digest" 
+                                                   id="weekly_digest" {% if preferences.weekly_digest %}checked{% endif %}>
+                                            <label class="form-check-label" for="weekly_digest">
+                                                <strong>Weekly Summary</strong>
+                                                <small class="d-block text-muted">Weekly email with performance insights</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-floppy me-1"></i>Save Preferences
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add some interactivity
+document.addEventListener('DOMContentLoaded', function() {
+    // Highlight changed preferences
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const card = this.closest('.card');
+            if (card) {
+                card.style.borderColor = '#007bff';
+                card.style.borderWidth = '2px';
+                setTimeout(() => {
+                    card.style.borderColor = '';
+                    card.style.borderWidth = '';
+                }, 2000);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

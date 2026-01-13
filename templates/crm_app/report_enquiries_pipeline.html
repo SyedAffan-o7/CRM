@@ -1,0 +1,281 @@
+{% extends 'base.html' %}
+
+{% block title %}Enquiries Pipeline Report - CRM System{% endblock %}
+{% block page_title %}Enquiries Pipeline Report{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'crm_app:dashboard' %}" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-speedometer2"></i> Dashboard
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label" for="from_date">From</label>
+                <input type="date" class="form-control form-control-sm" id="from_date" name="from_date" value="{% if from_date %}{{ from_date|date:'Y-m-d' }}{% endif %}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="to_date">To</label>
+                <input type="date" class="form-control form-control-sm" id="to_date" name="to_date" value="{% if to_date %}{{ to_date|date:'Y-m-d' }}{% endif %}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="stage">Stage</label>
+                <select class="form-select form-select-sm" id="stage" name="stage">
+                    <option value="">All</option>
+                    {% for value, label in stage_choices %}
+                        <option value="{{ value }}" {% if stage_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="status">Status</label>
+                <select class="form-select form-select-sm" id="status" name="status">
+                    <option value="">All</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="lead_source">Lead Source</label>
+                <select class="form-select form-select-sm" id="lead_source" name="lead_source">
+                    <option value="">All</option>
+                    {% for s in lead_sources %}
+                        <option value="{{ s.id }}" {% if lead_source_filter == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="salesperson">Salesperson</label>
+                <select class="form-select form-select-sm" id="salesperson" name="salesperson">
+                    <option value="">All</option>
+                    {% for u in salespeople %}
+                        <option value="{{ u.id }}" {% if salesperson_filter == u.id|stringformat:"s" %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-funnel"></i> Apply Filters
+                </button>
+                <a href="{% url 'crm_app:report_enquiries_pipeline' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Total Enquiries</div>
+                <div class="h3 mb-0">{{ total_leads }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Fulfilled</div>
+                <div class="h3 mb-0 text-success">{{ fulfilled_count }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Not Fulfilled</div>
+                <div class="h3 mb-0 text-danger">{{ not_fulfilled_count }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Fulfillment Rate</div>
+                <div class="h3 mb-0">{{ fulfillment_rate }}%</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-light">
+                <strong>Stage Breakdown</strong>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Stage</th>
+                                <th class="text-end">Count</th>
+                                <th class="text-end">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in stage_stats %}
+                                <tr>
+                                    <td>{{ row.label }}</td>
+                                    <td class="text-end">{{ row.count }}</td>
+                                    <td class="text-end">{{ row.percent }}%</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-light">
+                <strong>Lead Source Breakdown</strong>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Source</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">Fulfilled</th>
+                                <th class="text-end">Lost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in source_stats %}
+                                <tr>
+                                    <td>{{ row.lead_source__name|default:'(None)' }}</td>
+                                    <td class="text-end">{{ row.total }}</td>
+                                    <td class="text-end">{{ row.fulfilled }}</td>
+                                    <td class="text-end">{{ row.lost }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">No data</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <strong>Salesperson Breakdown</strong>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Salesperson</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-end">Fulfilled</th>
+                        <th class="text-end">Lost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in salesperson_stats %}
+                        <tr>
+                            <td>
+                                {% if row.assigned_sales_person__first_name or row.assigned_sales_person__last_name %}
+                                    {{ row.assigned_sales_person__first_name }} {{ row.assigned_sales_person__last_name }}
+                                {% else %}
+                                    {{ row.assigned_sales_person__username|default:'(Unassigned)' }}
+                                {% endif %}
+                            </td>
+                            <td class="text-end">{{ row.total }}</td>
+                            <td class="text-end">{{ row.fulfilled }}</td>
+                            <td class="text-end">{{ row.lost }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-3">No data</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <strong>Enquiries List</strong>
+        <span class="text-muted small">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Phone</th>
+                        <th>Stage</th>
+                        <th>Status</th>
+                        <th>Source</th>
+                        <th>Assigned</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lead in page_obj %}
+                        <tr>
+                            <td>{{ lead.created_date|date:'Y-m-d' }}</td>
+                            <td><a href="{% url 'crm_app:lead_detail' lead.pk %}">{{ lead.contact_name }}</a></td>
+                            <td>{{ lead.phone_number }}</td>
+                            <td>{{ lead.get_enquiry_stage_display }}</td>
+                            <td>
+                                {% if lead.lead_status == 'fulfilled' %}
+                                    <span class="badge bg-success">Fulfilled</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Not Fulfilled</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ lead.lead_source.name|default:'-' }}</td>
+                            <td>{{ lead.assigned_sales_person.get_full_name|default:lead.assigned_sales_person.username|default:'-' }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No enquiries found for these filters.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">Previous</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                {% endif %}
+
+                <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Next</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

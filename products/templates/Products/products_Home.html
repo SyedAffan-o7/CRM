@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Products - AAA CRM{% endblock %}
+{% block page_title %}Products{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Product Management</h5>
+                <small class="text-muted">Manage product catalog, categories and subcategories</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 border-primary">
+                            <div class="card-body text-center">
+                                <i class="bi bi-tags text-primary" style="font-size: 3rem;"></i>
+                                <h5 class="card-title mt-3">Categories</h5>
+                                <p class="card-text">Manage product categories and organize your catalog</p>
+                                <a href="{% url 'products:category-list' %}" class="btn btn-primary">
+                                    <i class="bi bi-gear"></i> Manage
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 border-secondary">
+                            <div class="card-body text-center">
+                                <i class="bi bi-diagram-3 text-secondary" style="font-size: 3rem;"></i>
+                                <h5 class="card-title mt-3">Subcategories</h5>
+                                <p class="card-text">Manage subcategories for detailed product organization</p>
+                                <a href="{% url 'products:subcategory-list' %}" class="btn btn-secondary">
+                                    <i class="bi bi-gear"></i> Manage
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 border-info">
+                            <div class="card-body text-center">
+                                <i class="bi bi-upload text-info" style="font-size: 3rem;"></i>
+                                <h5 class="card-title mt-3">Import CSV</h5>
+                                <p class="card-text">Bulk import categories and subcategories from CSV file</p>
+                                <a href="{% url 'products:products-import-csv' %}" class="btn btn-info">
+                                    <i class="bi bi-cloud-upload"></i> Import
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted mb-3">Quick Actions</h6>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{% url 'crm_app:dashboard' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,532 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - CRM System{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'crm_app:lead_add' %}" class="btn btn-cta btn-sm fw-bold">
+  <i class="bi bi-plus"></i> New Enquiry
+</a>
+{% endblock %}
+
+{% block content %}
+
+    {% if all_employees %}
+    <!-- Employee Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="d-flex align-items-center gap-3 flex-wrap w-100">
+                <div class="flex-grow-1" style="min-width: 160px; flex: 1 1 0;">
+                    <input type="date" class="form-control form-control-sm" id="from_date" name="from_date"
+                           value="{% if from_date %}{{ from_date|date:'Y-m-d' }}{% endif %}">
+                </div>
+                <div class="flex-grow-1" style="min-width: 160px; flex: 1 1 0;">
+                    <input type="date" class="form-control form-control-sm" id="to_date" name="to_date"
+                           value="{% if to_date %}{{ to_date|date:'Y-m-d' }}{% endif %}">
+                </div>
+                <div class="flex-grow-1" style="min-width: 180px; flex: 1 1 0;">
+                    <select class="form-select form-select-sm" id="month_filter" name="month_filter">
+                        <option value="">All Months</option>
+                        <option value="1" {% if selected_month == 1 %}selected{% endif %}>January</option>
+                        <option value="2" {% if selected_month == 2 %}selected{% endif %}>February</option>
+                        <option value="3" {% if selected_month == 3 %}selected{% endif %}>March</option>
+                        <option value="4" {% if selected_month == 4 %}selected{% endif %}>April</option>
+                        <option value="5" {% if selected_month == 5 %}selected{% endif %}>May</option>
+                        <option value="6" {% if selected_month == 6 %}selected{% endif %}>June</option>
+                        <option value="7" {% if selected_month == 7 %}selected{% endif %}>July</option>
+                        <option value="8" {% if selected_month == 8 %}selected{% endif %}>August</option>
+                        <option value="9" {% if selected_month == 9 %}selected{% endif %}>September</option>
+                        <option value="10" {% if selected_month == 10 %}selected{% endif %}>October</option>
+                        <option value="11" {% if selected_month == 11 %}selected{% endif %}>November</option>
+                        <option value="12" {% if selected_month == 12 %}selected{% endif %}>December</option>
+                    </select>
+                </div>
+                <div class="flex-grow-1" style="min-width: 200px; flex: 1 1 0;">
+                    <select class="form-select form-select-sm" id="employee" name="employee">
+                        <option value="">Global (All Employees)</option>
+                        {% for emp in all_employees %}
+                            <option value="{{ emp.id }}" {% if selected_employee == emp.id|stringformat:"s" %}selected{% endif %}>
+                                {{ emp.get_full_name|default:emp.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if selected_year %}
+                    <input type="hidden" name="year_filter" value="{{ selected_year }}">
+                {% endif %}
+                <div class="d-flex gap-2 ms-auto">
+                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                    <a href="{% url 'crm_app:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Statistics Cards Row -->
+    <div class="row mb-4">
+        <div class="col-xl-4 col-md-4 mb-4">
+            <div class="card card-stats border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col">
+                            <h5 class="card-title text-uppercase text-muted mb-0">Total Enquiries</h5>
+                            <a href="{% url 'crm_app:lead_list' %}" class="text-decoration-none">
+                                <span class="display-4 font-weight-bold mb-0 text-primary">{{ total_enquiries_month }}</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-md-4 mb-4">
+            <div class="card card-stats border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col">
+                            <h5 class="card-title text-uppercase text-muted mb-0">Fulfilled</h5>
+                            <a href="{% url 'crm_app:lead_list' %}?enquiry_status=fulfilled" class="text-decoration-none">
+                                <span class="display-4 font-weight-bold mb-0 text-success">{{ fulfilled_month }}</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-md-4 mb-4">
+            <div class="card card-stats border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col">
+                            <h5 class="card-title text-uppercase text-muted mb-0">Not Fulfilled</h5>
+                            <a href="{% url 'crm_app:lead_list' %}?enquiry_status=not_fulfilled" class="text-decoration-none">
+                                <span class="display-4 font-weight-bold mb-0 text-warning">{{ not_fulfilled_month }}</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual User Performance section removed per requirement -->
+    
+    <!-- Outbound Analytics -->
+    {% if show_all_sales or user_sales_data or True %}
+    <!-- Salesperson cards (slider) -->
+    <div class="row mt-4">
+        <div class="col-12 mb-4 px-0">
+            <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+                <h6 class="mb-0 text-secondary">Salesperson Leaderboard</h6>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Leaderboard navigation">
+                    <button type="button" id="leaderboardPrev" class="btn btn-outline-secondary">
+                        <i class="bi bi-chevron-up"></i>
+                    </button>
+                    <button type="button" id="leaderboardNext" class="btn btn-outline-secondary">
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="leaderboardSlider" class="leaderboard-slider">
+                <div id="leaderboardTrack" class="leaderboard-track d-flex"></div>
+            </div>
+            <div id="leaderboardDots" class="leaderboard-dots d-flex justify-content-center gap-2 mt-3"></div>
+            <div id="leaderboardLoading" class="text-center py-3">
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                Loading leaderboard...
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Outbound Methods
+                        {% if selected_employee %}
+                        <small class="text-info d-block">Filtered view - Selected salesperson only</small>
+                        {% else %}
+                        <small class="text-muted d-block">Global view - All activities</small>
+                        {% endif %}
+                    </h6>
+                    <small class="text-muted">Calls, WhatsApp, Emails</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartMethods" height="160"></canvas>
+                    <div id="chartMethodsFallback" style="display: none; text-align: center; padding: 20px;">
+                        <p class="text-muted">No data available for chart</p>
+                        <small class="text-muted">Create some outbound activities to see the chart</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Outcomes
+                        {% if selected_employee %}
+                        <small class="text-info d-block">Filtered view - Selected salesperson only</small>
+                        {% else %}
+                        <small class="text-muted d-block">Global view - All activities</small>
+                        {% endif %}
+                    </h6>
+                    <small class="text-muted">Positive/Negative/Neutral etc.</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartOutcomes" height="160"></canvas>
+                    <div id="chartOutcomesFallback" style="display: none; text-align: center; padding: 20px;">
+                        <p class="text-muted">No data available for chart</p>
+                        <small class="text-muted">Create some outbound activities to see the chart</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Progress bar animation removed - no longer needed
+    });
+    </script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to handle employee filter changes
+    window.handleEmployeeChange = function() {
+        const select = document.getElementById('employee');
+        const employeeId = select.value;
+        
+        // Build new URL with employee parameter
+        const url = new URL(window.location);
+        if (employeeId) {
+            url.searchParams.set('employee', employeeId);
+        } else {
+            url.searchParams.delete('employee');
+        }
+        
+        // Update URL without page reload
+        window.history.pushState({}, '', url);
+        
+        // Reload analytics data
+        loadAnalyticsData();
+    };
+    
+    // Function to load analytics data
+    window.loadAnalyticsData = async function() {
+        try {
+            console.log('Loading dashboard analytics...');
+            // Align Chart.js font and colors with theme
+            if (window.Chart && Chart.defaults) {
+                const cs = getComputedStyle(document.body);
+                if (Chart.defaults.font) {
+                    Chart.defaults.font.family = cs.fontFamily;
+                }
+                // Set default text color for axes/legends to theme text color
+                const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() || '#0f172a';
+                Chart.defaults.color = textColor;
+            }
+            const styles = getComputedStyle(document.documentElement);
+            const cPrimary = (styles.getPropertyValue('--brand-primary') || '#4F46E5').trim();
+            const cSecondary = (styles.getPropertyValue('--brand-secondary') || '#22C55E').trim();
+            const cAccent = (styles.getPropertyValue('--brand-accent') || '#F59E0B').trim();
+            const cInfo = '#06b6d4';
+            const cDanger = '#ef4444';
+            const cMuted = '#6c757d';
+            const cPurple = '#6610f2';
+            const cTeal = '#20c997';
+            // Build API URL with current filters + explicit date range
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromDateInput = document.getElementById('from_date');
+            const toDateInput = document.getElementById('to_date');
+            if (fromDateInput && fromDateInput.value && toDateInput && toDateInput.value) {
+                urlParams.set('from_date', fromDateInput.value);
+                urlParams.set('to_date', toDateInput.value);
+            }
+            const apiUrl = `/api/analytics/overview/?${urlParams.toString()}`;
+            console.log('Fetching analytics from:', apiUrl);
+            const res = await fetch(apiUrl, { headers: { 'Accept': 'application/json' }});
+            console.log('API response status:', res.status);
+
+            if (!res.ok) {
+                throw new Error('HTTP ' + res.status + ': ' + res.statusText);
+            }
+
+            const data = await res.json();
+            console.log('API response data:', data);
+
+            // Hide loading indicator
+            const loadingRow = document.getElementById('leaderboardLoading');
+            if (loadingRow) loadingRow.style.display = 'none';
+
+            // Destroy existing charts before creating new ones
+            const methodChartCanvas = document.getElementById('chartMethods');
+            const outcomeChartCanvas = document.getElementById('chartOutcomes');
+            
+            // Destroy method chart if it exists
+            if (window.methodChart && window.methodChart instanceof Chart) {
+                window.methodChart.destroy();
+            }
+            
+            // Destroy outcome chart if it exists
+            if (window.outcomeChart && window.outcomeChart instanceof Chart) {
+                window.outcomeChart.destroy();
+            }
+
+            // Method breakdown chart (bar)
+            const methodLabels = (data.method_breakdown || []).map(m => m.method);
+            const methodCounts = (data.method_breakdown || []).map(m => m.count);
+
+            if (methodLabels.length > 0) {
+                const ctxM = methodChartCanvas.getContext('2d');
+                window.methodChart = new Chart(ctxM, {
+                    type: 'bar',
+                    data: {
+                        labels: methodLabels,
+                        datasets: [{
+                            label: 'Activities',
+                            data: methodCounts,
+                            backgroundColor: cPrimary,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Show fallback message for methods chart
+                if (methodChartCanvas) methodChartCanvas.style.display = 'none';
+                const methodFallback = document.getElementById('chartMethodsFallback');
+                if (methodFallback) methodFallback.style.display = 'block';
+            }
+
+            // Outcomes chart (doughnut)
+            const outcomeLabels = (data.outcome_breakdown || []).map(o => o.outcome);
+            const outcomeCounts = (data.outcome_breakdown || []).map(o => o.count);
+
+            if (outcomeLabels.length > 0) {
+                const ctxO = outcomeChartCanvas.getContext('2d');
+                window.outcomeChart = new Chart(ctxO, {
+                    type: 'doughnut',
+                    data: {
+                        labels: outcomeLabels,
+                        datasets: [{
+                            label: 'Outcomes',
+                            data: outcomeCounts,
+                            backgroundColor: [cSecondary, cInfo, cDanger, cMuted, cAccent, cPurple, cTeal]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Show fallback message for outcomes chart
+                if (outcomeChartCanvas) outcomeChartCanvas.style.display = 'none';
+                const outcomeFallback = document.getElementById('chartOutcomesFallback');
+                if (outcomeFallback) outcomeFallback.style.display = 'block';
+            }
+
+            // Leaderboard cards (slider)
+            const slider = document.getElementById('leaderboardSlider');
+            const track = document.getElementById('leaderboardTrack');
+            const dotsContainer = document.getElementById('leaderboardDots');
+
+            if (dotsContainer) {
+                dotsContainer.style.display = 'none';
+                dotsContainer.innerHTML = '';
+            }
+
+            if (!track) {
+                console.warn('Leaderboard track element not found');
+                return;
+            }
+
+            track.innerHTML = '';
+            const leaderboard = data.leaderboard || [];
+
+            if (leaderboard.length > 0) {
+                // Vertical slider: show one employee per view with hidden scrollbar
+                if (slider) {
+                    slider.style.overflowX = 'hidden';
+                    slider.style.overflowY = 'scroll';
+                    slider.style.scrollSnapType = 'y mandatory';
+                    // Hide scrollbar but keep functionality
+                    slider.style.scrollbarWidth = 'none'; // Firefox
+                    slider.style.msOverflowStyle = 'none'; // IE/Edge
+                    // Add webkit scrollbar hiding
+                    const style = document.createElement('style');
+                    style.textContent = '#leaderboardSlider::-webkit-scrollbar { display: none; }';
+                    if (!document.querySelector('style[data-leaderboard-scroll]')) {
+                        style.setAttribute('data-leaderboard-scroll', 'true');
+                        document.head.appendChild(style);
+                    }
+                }
+
+                track.className = 'leaderboard-track d-flex flex-column';
+
+                leaderboard.forEach(row => {
+                    const totalFulfilled = row.total_fulfilled || 0;
+                    const totalNotFulfilled = row.total_not_fulfilled || 0;
+                    const totalEnquiries = row.total_enquiries || (totalFulfilled + totalNotFulfilled);
+
+                    const cardCol = document.createElement('div');
+                    cardCol.className = 'px-2 mb-3 flex-shrink-0';
+                    cardCol.style.scrollSnapAlign = 'start';
+                    cardCol.style.width = '100%';
+                    cardCol.style.maxWidth = '100%';
+
+                    cardCol.innerHTML = `
+                        <div class="card h-100 border-0 shadow-sm w-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3 text-center">${row.full_name || row.username}</h6>
+                                <div class="d-flex justify-content-between text-sm">
+                                    <div class="me-3">
+                                        <div class="text-muted small">Total enquiries</div>
+                                        <div class="fw-semibold">${totalEnquiries}</div>
+                                    </div>
+                                    <div class="me-3">
+                                        <div class="text-muted small">Fulfilled</div>
+                                        <div class="text-success fw-semibold">${totalFulfilled}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-muted small">Not fulfilled</div>
+                                        <div class="text-danger fw-semibold">${totalNotFulfilled}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    track.appendChild(cardCol);
+                });
+
+                // After rendering cards, set slider height to exactly one card
+                if (slider) {
+                    const firstCardEl = track.querySelector('.px-2');
+                    if (firstCardEl) {
+                        const cardHeight = firstCardEl.offsetHeight;
+                        slider.style.height = cardHeight + 'px';
+                        slider.style.maxHeight = cardHeight + 'px';
+                    }
+                }
+
+                // Attach navigation buttons for smooth vertical scrolling
+                if (slider) {
+                    const prevBtn = document.getElementById('leaderboardPrev');
+                    const nextBtn = document.getElementById('leaderboardNext');
+
+                    // Calculate scroll amount based on card height (1 card per view)
+                    const scrollOneView = (direction) => {
+                        // Get first card to calculate height
+                        const firstCard = track.querySelector('.px-2');
+                        if (!firstCard) return;
+                        
+                        const cardHeight = firstCard.offsetHeight;
+                        const gap = 12; // mb-3 gap between cards
+                        const scrollAmount = cardHeight + gap; // 1 card + gap
+                        
+                        slider.scrollBy({
+                            top: direction === 'next' ? scrollAmount : -scrollAmount,
+                            behavior: 'smooth'
+                        });
+                    };
+
+                    if (prevBtn) {
+                        prevBtn.onclick = () => scrollOneView('prev');
+                    }
+                    if (nextBtn) {
+                        nextBtn.onclick = () => scrollOneView('next');
+                    }
+                }
+            } else {
+                const loadingRow = document.getElementById('leaderboardLoading');
+                if (loadingRow) loadingRow.style.display = 'none';
+
+                const emptyState = document.createElement('div');
+                // Full-width flex box so the message is centered in the row
+                emptyState.className = 'w-100 d-flex flex-column align-items-center justify-content-center text-center text-muted py-3';
+                emptyState.innerHTML = `
+                    <i class="bi bi-info-circle"></i> No enquiries found.
+                    <br><small>Create some enquiries to see salesperson stats.</small>
+                `;
+                track.appendChild(emptyState);
+            }
+
+            console.log('Dashboard analytics loaded successfully');
+
+        } catch (e) {
+            console.error('Failed to load dashboard analytics:', e);
+
+            // Hide loading indicator
+            const loadingRow = document.getElementById('leaderboardLoading');
+            if (loadingRow) loadingRow.style.display = 'none';
+
+            // Destroy existing charts on error
+            if (window.methodChart && window.methodChart instanceof Chart) {
+                window.methodChart.destroy();
+            }
+            if (window.outcomeChart && window.outcomeChart instanceof Chart) {
+                window.outcomeChart.destroy();
+            }
+
+            // Show error message in leaderboard
+            const track = document.getElementById('leaderboardTrack');
+            const dotsContainer = document.getElementById('leaderboardDots');
+            if (dotsContainer) dotsContainer.style.display = 'none';
+            if (track) {
+                track.innerHTML = `
+                    <div class="text-center text-danger py-3 w-100">
+                        <i class="bi bi-exclamation-triangle"></i> Failed to load analytics data.
+                        <br><small>Error: ${e.message}</small>
+                    </div>
+                `;
+            }
+            if (dotsContainer) {
+                dotsContainer.innerHTML = '';
+            }
+
+            // Show fallback messages for charts
+            const methodCanvas = document.getElementById('chartMethods');
+            const methodFallback = document.getElementById('chartMethodsFallback');
+            const outcomeCanvas = document.getElementById('chartOutcomes');
+            const outcomeFallback = document.getElementById('chartOutcomesFallback');
+
+            if (methodCanvas) methodCanvas.style.display = 'none';
+            if (methodFallback) methodFallback.style.display = 'block';
+            if (outcomeCanvas) outcomeCanvas.style.display = 'none';
+            if (outcomeFallback) outcomeFallback.style.display = 'block';
+        }
+    };
+    
+    // Initial load of analytics data
+    loadAnalyticsData();
+});
+</script>
+{% endblock %}

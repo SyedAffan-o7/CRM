@@ -1,0 +1,28 @@
+{% load tz %}
+{% with timezone=timezone|default:'UTC' %}
+{% timezone timezone %}
+
+<div class="row g-4 mb-4">
+    <!-- Overdue Follow-ups -->
+    <div class="col-md-4">
+        {% include 'crm_app/partials/followup_card.html' with title='Overdue' badge_color='danger' followups=followups_overdue %}
+    </div>
+
+    <!-- Today's Follow-ups -->
+    <div class="col-md-4">
+        {% include 'crm_app/partials/followup_card.html' with title='Today' badge_color='primary' followups=followups_today %}
+    </div>
+
+    <!-- Upcoming Follow-ups -->
+    <div class="col-md-4">
+        {% include 'crm_app/partials/followup_card.html' with title='Upcoming' badge_color='info' followups=followups_upcoming|slice:":5" %}
+        {% if followups_upcoming|length > 5 %}
+            <div class="text-center py-2">
+                <small class="text-muted">+{{ followups_upcoming|length|add:"-5" }} more</small>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endtimezone %}
+{% endwith %}

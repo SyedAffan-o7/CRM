@@ -1,0 +1,383 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - CRM System{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'crm_app:lead_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Back to Enquiries
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.contact_name.id_for_label }}" class="form-label">Contact Name *</label>
+                                {{ form.contact_name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.phone_number.id_for_label }}" class="form-label">Phone Number *</label>
+                                {{ form.phone_number }}
+                                {{ form.country }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.company_name.id_for_label }}" class="form-label">Company Name</label>
+                                {{ form.company_name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.lead_source.id_for_label }}" class="form-label">Lead Source</label>
+                                {{ form.lead_source }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.quantity.id_for_label }}" class="form-label">Quantity</label>
+                                {{ form.quantity }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.price_rate.id_for_label }}" class="form-label">Price Rate</label>
+                                {{ form.price_rate }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.enquiry_stage.id_for_label }}" class="form-label">Enquiry Stage</label>
+                                {{ form.enquiry_stage }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.assigned_sales_person.id_for_label }}" class="form-label">Assigned Sales Person</label>
+                                {{ form.assigned_sales_person }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Numbers Section (shown based on stage) -->
+                    <div class="row" id="invoiceFields" style="display: none;">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.proforma_invoice_number.id_for_label }}" class="form-label">Proforma Invoice Number</label>
+                                {{ form.proforma_invoice_number }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.invoice_number.id_for_label }}" class="form-label">Invoice Number</label>
+                                {{ form.invoice_number }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category & Product Information Section -->
+                    <div class="card mb-4" style="background-color: #f8f9fa;">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 text-primary">Category & Product Information</h6>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="addProductBtn">
+                                <i class="bi bi-plus-circle"></i> Add Product
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="product-entry border rounded p-3 mb-3">
+                                <div id="productContainer">
+                                    <!-- Product Entry 1 -->
+                                    <div class="product-item border-bottom  mb-2" data-index="0">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Category</label>
+                                                    <select name="categories[]" class="form-control category-select" data-index="0">
+                                                        <option value="">Select Category</option>
+                                                        {% for category in categories %}
+                                                            <option value="{{ category.id }}">{{ category.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Subcategory</label>
+                                                    <select name="subcategories[]" class="form-control subcategory-select" data-index="0">
+                                                        <option value="">Select Subcategory</option>
+                                                        {% for subcategory in subcategories %}
+                                                            <option value="{{ subcategory.id }}" data-category="{{ subcategory.category.id }}">{{ subcategory.category.name }} - {{ subcategory.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Product Description</label>
+                                                    <textarea name="product_descriptions[]" class="form-control" rows="2" placeholder="Product description or requirements"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Product Image</label>
+                                                    <input type="file" name="product_images[]" class="form-control" accept="image/*">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Keep original fields for backward compatibility -->
+                            <div style="display: none;">
+                                {{ form.category }}
+                                {{ form.subcategory }}
+                                {{ form.images }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Next Action and Notes Section - Moved to bottom -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.next_action.id_for_label }}" class="form-label">Next Action</label>
+                                {{ form.next_action }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                        {{ form.notes }}
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'crm_app:lead_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Save Enquiry
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
+
+<script>
+// Function to toggle invoice fields based on selected stage
+function toggleInvoiceFields() {
+    const stageSelect = document.querySelector('#id_enquiry_stage');
+    const invoiceFields = document.querySelector('#invoiceFields');
+
+    if (!stageSelect) return;
+
+    // Hide invoice fields by default
+    invoiceFields.style.display = 'none';
+
+    // Show relevant fields based on selected stage
+    const selectedStage = stageSelect.value;
+    if (['proforma_invoice_sent', 'invoice_made', 'invoice_sent'].includes(selectedStage)) {
+        invoiceFields.style.display = 'flex';
+    }
+}
+
+// Initialize the form when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize phone input
+    const phoneInput = document.querySelector("#id_phone_number");
+    if (phoneInput) {
+        const iti = window.intlTelInput(phoneInput, {
+            autoPlaceholder: "aggressive",
+            preferredCountries: ["ae", "sa", "qa", "kw", "bh", "om", "us", "gb", "in"],
+            utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
+            autoInsertDialCode: true,
+            formatOnDisplay: true,
+            nationalMode: false,
+            separateDialCode: true
+        });
+
+        // Update country field when phone input changes
+        phoneInput.addEventListener('countrychange', function() {
+            const countryData = iti.getSelectedCountryData();
+            document.querySelector('#id_country').value = countryData.name;
+        });
+
+        // Set initial country value
+        const countryData = iti.getSelectedCountryData();
+        document.querySelector('#id_country').value = countryData.name;
+
+        // Validate phone number on blur
+        phoneInput.addEventListener('blur', function() {
+            if (phoneInput.value.trim()) {
+                if (iti.isValidNumber()) {
+                    phoneInput.classList.remove('is-invalid');
+                    phoneInput.classList.add('is-valid');
+                } else {
+                    phoneInput.classList.remove('is-valid');
+                    phoneInput.classList.add('is-invalid');
+                }
+            }
+        });
+    }
+
+    // Initialize invoice fields toggle
+    toggleInvoiceFields();
+
+    // Update invoice fields when stage changes
+    const stageSelect = document.querySelector('#id_enquiry_stage');
+    if (stageSelect) {
+        stageSelect.addEventListener('change', toggleInvoiceFields);
+    }
+
+    // Dynamic Product Entry Management
+    let productIndex = 1; // Start from 1 since we have one initial product
+
+    // Add Product Button
+    const addProductBtn = document.getElementById('addProductBtn');
+    const productContainer = document.getElementById('productContainer');
+
+    addProductBtn.addEventListener('click', function() {
+        const newProductEntry = createProductEntry(productIndex);
+        productContainer.appendChild(newProductEntry);
+        productIndex++;
+        updateRemoveButtons();
+        setupCategoryChangeListener(newProductEntry);
+    });
+
+    // Function to create a new product entry
+    function createProductEntry(index) {
+        const productEntry = document.createElement('div');
+        productEntry.className = 'product-item border-bottom  mb-2';
+        productEntry.setAttribute('data-index', index);
+
+        productEntry.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-product-btn">
+                    <i class="bi bi-trash"></i> Remove
+                </button>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select name="categories[]" class="form-control category-select" data-index="${index}">
+                            <option value="">Select Category</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Subcategory</label>
+                        <select name="subcategories[]" class="form-control subcategory-select" data-index="${index}">
+                            <option value="">Select Subcategory</option>
+                            {% for subcategory in subcategories %}
+                                <option value="{{ subcategory.id }}" data-category="{{ subcategory.category.id }}">{{ subcategory.category.name }} - {{ subcategory.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Product Description</label>
+                        <textarea name="product_descriptions[]" class="form-control" rows="2" placeholder="Product description or requirements"></textarea>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Product Image</label>
+                        <input type="file" name="product_images[]" class="form-control" accept="image/*">
+                    </div>
+                </div>
+            </div>
+        `;
+
+        return productEntry;
+    }
+
+    // Function to update remove button visibility
+    function updateRemoveButtons() {
+        const productEntries = productContainer.querySelectorAll('.product-item');
+        const removeButtons = productContainer.querySelectorAll('.remove-product-btn');
+
+        // Show remove buttons only if there's more than one product entry
+        removeButtons.forEach(btn => {
+            btn.style.display = productEntries.length > 1 ? 'inline-block' : 'none';
+        });
+    }
+
+    // Remove Product Button Event Delegation
+    productContainer.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-product-btn')) {
+            const productEntry = e.target.closest('.product-item');
+            productEntry.remove();
+            updateRemoveButtons();
+        }
+    });
+
+    // Function to setup category change listener for a product entry
+    function setupCategoryChangeListener(productEntry) {
+        const categorySelect = productEntry.querySelector('.category-select');
+        const subcategorySelect = productEntry.querySelector('.subcategory-select');
+
+        categorySelect.addEventListener('change', function() {
+            const categoryId = this.value;
+
+            // Clear subcategory options
+            subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
+
+            if (categoryId) {
+                // Filter subcategories for selected category
+                const matchingSubcategories = Array.from(subcategorySelect.querySelectorAll('option'))
+                    .filter(option => option.getAttribute('data-category') === categoryId);
+
+                matchingSubcategories.forEach(option => {
+                    subcategorySelect.appendChild(option);
+                });
+            }
+        });
+    }
+
+    // Setup category change listener for initial product entry
+    const initialProductEntry = productContainer.querySelector('.product-item');
+    if (initialProductEntry) {
+        setupCategoryChangeListener(initialProductEntry);
+    }
+
+    // Update remove buttons initially
+    updateRemoveButtons();
+});
+</script>
+{% endblock %}

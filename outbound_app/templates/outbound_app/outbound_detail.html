@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}Outbound Detail{% endblock %}
+{% block page_title %}Outbound Detail{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'outbound_app:outbound_list' %}" class="btn btn-outline-secondary">
+  <i class="bi bi-arrow-left"></i> Back to Outbound List
+</a>
+{% if not not_found %}
+  <a href="{% url 'outbound_app:outbound_edit' pk=activity.id %}" class="btn btn-primary">
+    <i class="bi bi-pencil"></i> Edit
+  </a>
+  <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal">
+    <i class="bi bi-trash"></i> Delete
+  </button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+  {% if not_found %}
+    <div class="alert alert-info" role="alert">
+      Outbound record not found.
+    </div>
+  {% else %}
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Outbound Record #{{ activity.id }}</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="mb-2"><strong>Customer</strong></div>
+            <div class="text-muted">{{ activity.contact.full_name|default:'-' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-2"><strong>Lead</strong></div>
+            <div class="text-muted">{{ activity.lead.contact_name|default:'-' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-2"><strong>Status</strong></div>
+            <div>
+              {% with s=outbound_status|default:'Unknown' %}
+                {% with sl=s|lower %}
+                  {% if 'converted' in sl %}
+                    <span class="badge bg-success">{{ s }}</span>
+                  {% elif 'contacted' in sl and not 'not' in sl %}
+                    <span class="badge bg-primary">{{ s }}</span>
+                  {% elif 'not' in sl %}
+                    <span class="badge bg-warning text-dark">{{ s }}</span>
+                  {% else %}
+                    <span class="badge bg-secondary">{{ s }}</span>
+                  {% endif %}
+                {% endwith %}
+              {% endwith %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-2"><strong>Time</strong></div>
+            <div class="text-muted">{{ activity.created_at|date:'M d, Y h:i A' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-2"><strong>Method</strong></div>
+            <div class="text-muted">{{ activity.get_method_display|default:'-' }}</div>
+          </div>
+          <div class="col-12">
+            <div class="mb-2"><strong>Summary</strong></div>
+            <div class="text-muted">{{ activity.summary|default:'-' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-2"><strong>Next Step</strong></div>
+            <div class="text-muted">{{ activity.get_next_step_display|default:'-' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-2"><strong>Next Step Date</strong></div>
+            <div class="text-muted">{% if activity.next_step_date %}{{ activity.next_step_date|date:'M d, Y h:i A' }}{% else %}-{% endif %}</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer text-muted">
+        Created by: {{ activity.created_by|default:'-' }}
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Delete</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            Are you sure you want to delete Outbound record #{{ activity.id }}?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <form method="post" action="{% url 'outbound_app:outbound_delete' pk=activity.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  {% endif %}
+</div>
+{% endblock %}

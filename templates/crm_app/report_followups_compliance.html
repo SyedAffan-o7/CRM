@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}Follow-ups Compliance Report - CRM System{% endblock %}
+{% block page_title %}Follow-ups Compliance Report{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'crm_app:dashboard' %}" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-speedometer2"></i> Dashboard
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label" for="from_date">From</label>
+                <input type="date" class="form-control form-control-sm" id="from_date" name="from_date" value="{% if from_date %}{{ from_date|date:'Y-m-d' }}{% endif %}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="to_date">To</label>
+                <input type="date" class="form-control form-control-sm" id="to_date" name="to_date" value="{% if to_date %}{{ to_date|date:'Y-m-d' }}{% endif %}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="assigned_to">Assigned To</label>
+                <select class="form-select form-select-sm" id="assigned_to" name="assigned_to">
+                    <option value="">All</option>
+                    {% for u in assignees %}
+                        <option value="{{ u.id }}" {% if assigned_to_filter == u.id|stringformat:"s" %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="status">Status</label>
+                <select class="form-select form-select-sm" id="status" name="status">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-funnel"></i> Apply Filters
+                </button>
+                <a href="{% url 'crm_app:report_followups_compliance' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-2">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Total</div>
+                <div class="h3 mb-0">{{ stats.total }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Completed</div>
+                <div class="h3 mb-0 text-success">{{ stats.completed }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Overdue</div>
+                <div class="h3 mb-0 text-danger">{{ stats.overdue }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Due Today</div>
+                <div class="h3 mb-0">{{ stats.today }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Upcoming</div>
+                <div class="h3 mb-0">{{ stats.upcoming }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Completion Rate</div>
+                <div class="h3 mb-0">{{ stats.completion_rate }}%</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-light">
+                <strong>User-wise Compliance</strong>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>User</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">Completed</th>
+                                <th class="text-end">Overdue</th>
+                                <th class="text-end">Today</th>
+                                <th class="text-end">Upcoming</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in user_stats %}
+                                <tr>
+                                    <td>
+                                        {% if row.assigned_to__first_name or row.assigned_to__last_name %}
+                                            {{ row.assigned_to__first_name }} {{ row.assigned_to__last_name }}
+                                        {% else %}
+                                            {{ row.assigned_to__username|default:'(Unassigned)' }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">{{ row.total }}</td>
+                                    <td class="text-end">{{ row.completed }}</td>
+                                    <td class="text-end">{{ row.overdue }}</td>
+                                    <td class="text-end">{{ row.due_today }}</td>
+                                    <td class="text-end">{{ row.upcoming }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">No data</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-light">
+                <strong>Follow-ups List</strong>
+                <div class="text-muted small">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Lead</th>
+                                <th>Status</th>
+                                <th>Assigned</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fu in page_obj %}
+                                <tr>
+                                    <td>{{ fu.scheduled_date|date:'Y-m-d H:i' }}</td>
+                                    <td>
+                                        <a href="{% url 'crm_app:lead_detail' fu.lead.pk %}">{{ fu.lead.contact_name }}</a>
+                                    </td>
+                                    <td>
+                                        {% if fu.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif fu.status == 'overdue' %}
+                                            <span class="badge bg-danger">Overdue</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ fu.assigned_to.get_full_name|default:fu.assigned_to.username|default:'-' }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">No follow-ups found for these filters.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if page_obj.paginator.num_pages > 1 %}
+            <div class="card-footer">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">Previous</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                        {% endif %}
+
+                        <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Next</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">Next</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ deal.deal_name }} - Deal Details{% endblock %}
+{% block page_title %}Deal Details{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'crm_app:deal_edit' deal.pk %}" class="btn btn-primary">
+        <i class="bi bi-pencil"></i> Edit Deal
+    </a>
+    <a href="{% url 'crm_app:deal_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Deals
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Deal Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Deal Name</h6>
+                        <p class="mb-3">{{ deal.deal_name }}</p>
+                        
+                        <h6 class="text-muted">Contact</h6>
+                        <p class="mb-3">
+                            <a href="{% url 'crm_app:contact_detail' deal.contact.pk %}">{{ deal.contact.full_name }}</a><br>
+                            <small class="text-muted">
+                                <a
+                                    href="https://wa.me/{{ deal.contact.phone_number|cut:' '|cut:'+'|cut:'-'|cut:'('|cut:')'|cut:'.'|cut:'/' }}"
+                                    class="me-1 text-success"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="Open WhatsApp chat"
+                                    aria-label="Open WhatsApp chat"
+                                >
+                                    <i class="bi bi-whatsapp"></i>
+                                </a>
+                                {{ deal.contact.phone_number }}
+                            </small>
+                        </p>
+                        
+                        <h6 class="text-muted">Account</h6>
+                        <p class="mb-3">
+                            <a href="{% url 'crm_app:account_detail' deal.account.pk %}">{{ deal.account.company_name }}</a>
+                        </p>
+                        
+                        <h6 class="text-muted">Products/Services</h6>
+                        <p class="mb-3">{{ deal.products_services|default:"-" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Deal Value</h6>
+                        <p class="mb-3">
+                            {% if deal.deal_value %}
+                                <strong>${{ deal.deal_value|floatformat:0 }}</strong>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </p>
+                        
+                        <h6 class="text-muted">Deal Stage</h6>
+                        <p class="mb-3">
+                            <span class="badge bg-{% if deal.deal_stage == 'closed_won' %}success{% elif deal.deal_stage == 'closed_lost' %}danger{% elif deal.deal_stage == 'negotiation' %}warning{% else %}primary{% endif %}">
+                                {{ deal.get_deal_stage_display }}
+                            </span>
+                        </p>
+                        
+                        <h6 class="text-muted">Probability</h6>
+                        <p class="mb-3">{{ deal.probability_percent }}%</p>
+                        
+                        <h6 class="text-muted">Expected Close Date</h6>
+                        <p class="mb-3">
+                            {% if deal.expected_close_date %}
+                                {{ deal.expected_close_date|date:"F d, Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </p>
+                        
+                        <h6 class="text-muted">Sales Person</h6>
+                        <p class="mb-3">{{ deal.sales_person_assigned.first_name|default:deal.sales_person_assigned.username|default:"-" }}</p>
+                    </div>
+                </div>
+                
+                {% if deal.reason_win_loss %}
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted">Reason for Win/Loss</h6>
+                        <p class="mb-3">{{ deal.reason_win_loss|linebreaks }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if deal.notes %}
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted">Notes</h6>
+                        <p class="mb-0">{{ deal.notes|linebreaks }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer text-muted">
+                <small>Created: {{ deal.created_date|date:"F d, Y H:i" }} | Last Updated: {{ deal.updated_date|date:"F d, Y H:i" }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Recent Activities</h6>
+            </div>
+            <div class="card-body">
+                {% if activities %}
+                    {% for activity in activities %}
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="avatar avatar-sm bg-primary rounded-circle me-3 flex-shrink-0">
+                            <i class="bi bi-{% if activity.activity_type == 'call' %}telephone{% elif activity.activity_type == 'email' %}envelope{% elif activity.activity_type == 'meeting' %}calendar{% else %}chat{% endif %} text-white"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ activity.subject }}</h6>
+                            <p class="text-muted small mb-1">{{ activity.description|truncatechars:100 }}</p>
+                            <small class="text-muted">
+                                {{ activity.user.first_name|default:activity.user.username }} - {{ activity.activity_date|date:"M d, H:i" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-clock-history text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2">No activities yet</p>
+                        <a href="{% url 'crm_app:activity_add' %}" class="btn btn-sm btn-outline-primary">Log Activity</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

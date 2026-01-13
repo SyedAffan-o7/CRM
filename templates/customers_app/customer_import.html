@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import Customers - CRM System{% endblock %}
+{% block page_title %}Import Customers{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'crm_app:contact_list' %}" class="btn btn-secondary">
+    <i class="bi bi-arrow-left"></i> Back to Customers
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-upload"></i> Upload Customer File
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        {{ form.file.label_tag }}
+                        {{ form.file }}
+                        {% if form.file.help_text %}
+                            <div class="form-text">{{ form.file.help_text }}</div>
+                        {% endif %}
+                        {% if form.file.errors %}
+                            <div class="text-danger">
+                                {% for error in form.file.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload"></i> Import Customers
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i> File Format Requirements
+                </h6>
+            </div>
+            <div class="card-body">
+                <h6>Required Columns:</h6>
+                <ul class="list-unstyled">
+                    <li><code>full_name</code> - Customer's full name</li>
+                    <li><code>phone_number</code> - Phone number</li>
+                </ul>
+                
+                <h6>Optional Columns:</h6>
+                <ul class="list-unstyled">
+                    <li><code>email</code> - Email address</li>
+                    <li><code>company_name</code> - Company name</li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Supported Formats:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-file-earmark-text"></i> CSV (.csv)</li>
+                    <li><i class="bi bi-file-earmark-excel"></i> Excel (.xlsx, .xls)</li>
+                </ul>
+                
+                <div class="alert alert-info mt-3">
+                    <small>
+                        <i class="bi bi-lightbulb"></i>
+                        <strong>Tip:</strong> If a customer with the same phone number already exists, their information will be updated.
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-download"></i> Sample File
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Download a sample CSV file to see the correct format:</p>
+                <a href="{% url 'customers_app:download_sample' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-download"></i> Download Sample CSV
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if messages %}
+    <div class="mt-4">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}

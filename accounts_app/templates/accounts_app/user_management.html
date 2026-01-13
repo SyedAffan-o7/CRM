@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+{% load static %}
+<!-- ========== TEMPLATE UPDATED WITH 6 BUTTONS ========== -->
+
+{% block title %}{{ title }} - CRM System{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{% url 'accounts_app:create_user' %}" class="btn btn-primary">
+        <i class="bi bi-person-plus"></i> Create User
+    </a>
+    <a href="{% url 'accounts_app:role_management' %}" class="btn btn-outline-info">
+        <i class="bi bi-gear"></i> Manage Roles
+    </a>
+    <span class="badge bg-success ms-2">✅ NEW TEMPLATE LOADED</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Users</h6>
+                        <h3 class="mb-0">{{ total_users }}</h3>
+                    </div>
+                    <div>
+                        <i class="bi bi-people fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Active Users</h6>
+                        <h3 class="mb-0">{{ active_users }}</h3>
+                    </div>
+                    <div>
+                        <i class="bi bi-person-check fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Roles</h6>
+                        <h3 class="mb-0">{{ roles|length }}</h3>
+                    </div>
+                    <div>
+                        <i class="bi bi-shield-check fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Inactive Users</h6>
+                        <h3 class="mb-0">{{ inactive_users }}</h3>
+                    </div>
+                    <div>
+                        <i class="bi bi-person-x fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Users by Role -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Users by Role</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for role_name, count in users_by_role.items %}
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h4 class="text-primary">{{ count }}</h4>
+                            <small class="text-muted">{{ role_name }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-people"></i> User Management
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAll" class="form-check-input">
+                        </th>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Employee ID</th>
+                        <th>Department</th>
+                        <th>Status</th>
+                        <th>Last Login</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="user_ids" value="{{ user.id }}" class="user-checkbox form-check-input">
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm me-2">
+                                    <span class="avatar-initial bg-label-primary">{{ user.first_name|first|default:user.username|first|upper }}</span>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ user.get_full_name|default:user.username }}</h6>
+                                    <small class="text-muted">{{ user.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if user.profile.role %}
+                                <span class="badge bg-{{ user.profile.role.role_level|add:'100'|floatformat:'0' }} text-white">
+                                    {{ user.profile.role.display_name }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">No Role</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.profile.employee_id|default:"-" }}</td>
+                        <td>{{ user.profile.department|default:"-" }}</td>
+                        <td>
+                    {% if user.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.last_login %}
+                                <small>{{ user.last_login|timesince }} ago</small>
+                            {% else %}
+                                <small class="text-muted">Never</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'accounts_app:view_user_credentials' user.id %}" 
+                                   class="btn btn-outline-secondary" 
+                                   title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'accounts_app:edit_user' user.id %}" 
+                                   class="btn btn-outline-primary" 
+                                   title="Edit User">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'accounts_app:reset_user_password' user.id %}" 
+                                   class="btn btn-outline-warning" 
+                                   title="Reset Password">
+                                    <i class="bi bi-key"></i>
+                                </a>
+                                <a href="{% url 'accounts_app:user_permissions_detail' user.id %}" 
+                                   class="btn btn-outline-info" 
+                                   title="View Permissions">
+                                    <i class="bi bi-shield-check"></i>
+                                </a>
+                                <form method="post" action="{% url 'accounts_app:toggle_user_status' user.id %}" class="d-inline"
+                                      onsubmit="return confirm('Are you sure you want to {% if user.is_active %}deactivate{% else %}activate{% endif %} this user?')">
+                                    {% csrf_token %}
+                                    <button type="submit" 
+                                            class="btn btn-outline-{{ user.is_active|yesno:'danger,success' }}"
+                                            title="{% if user.is_active %}Deactivate{% else %}Activate{% endif %} User">
+                                        <i class="bi bi-{{ user.is_active|yesno:'person-x,person-check' }}"></i>
+                                    </button>
+                                </form>
+                                {% if not user.is_superuser and user.id != request.user.id %}
+                                <a href="{% url 'accounts_app:delete_user' user.id %}" 
+                                   class="btn btn-outline-danger" 
+                                   title="Delete User">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="bi bi-people display-4 d-block mb-2"></i>
+                            No users found.
+                            <br>
+                            <a href="{% url 'accounts_app:create_user' %}" class="btn btn-primary mt-2">
+                                <i class="bi bi-person-plus"></i> Create First User
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Actions -->
+{% if users %}
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <strong>Bulk Actions:</strong>
+                <span id="selectedCount" class="text-muted">0 selected</span>
+            </div>
+            <div class="col-md-6 text-end">
+                <form id="bulkActionForm" method="post" action="{% url 'accounts_app:bulk_user_actions' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_ids" id="selectedUsers" value="">
+                    <div class="btn-group">
+                        <button type="submit" name="action" value="activate" class="btn btn-success btn-sm" disabled>
+                            <i class="bi bi-person-check"></i> Activate
+                        </button>
+                        <button type="submit" name="action" value="deactivate" class="btn btn-warning btn-sm" disabled>
+                            <i class="bi bi-person-x"></i> Deactivate
+                        </button>
+                        <button type="submit" name="action" value="delete" class="btn btn-danger btn-sm" disabled>
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('selectAll');
+    const userCheckboxes = document.querySelectorAll('.user-checkbox');
+    const selectedCount = document.getElementById('selectedCount');
+    const selectedUsers = document.getElementById('selectedUsers');
+    const bulkButtons = document.querySelectorAll('#bulkActionForm button[type="submit"]');
+
+    function updateBulkActions() {
+        const checkedBoxes = document.querySelectorAll('.user-checkbox:checked');
+        const count = checkedBoxes.length;
+        const userIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+        selectedCount.textContent = `${count} selected`;
+        selectedUsers.value = userIds.join(',');
+
+        bulkButtons.forEach(button => {
+            button.disabled = count === 0;
+        });
+    }
+
+    selectAll.addEventListener('change', function() {
+        userCheckboxes.forEach(cb => cb.checked = this.checked);
+        updateBulkActions();
+    });
+
+    userCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkActions);
+    });
+});
+</script>
+{% endblock %}

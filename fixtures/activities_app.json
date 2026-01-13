@@ -1,0 +1,44 @@
+﻿[
+{
+  "model": "activities_app.activitylog",
+  "pk": 1,
+  "fields": {
+    "activity_type": "note",
+    "subject": "Lead created",
+    "description": "New enquiry created for wsad",
+    "details": null,
+    "contact": null,
+    "lead": 3,
+    "deal": null,
+    "content_type": null,
+    "object_id": null,
+    "user": [
+      "hp"
+    ],
+    "activity_date": "2025-09-06T16:05:42.367Z",
+    "created_date": "2025-09-06T16:05:42.368Z",
+    "updated_date": null
+  }
+},
+{
+  "model": "activities_app.activitylog",
+  "pk": 2,
+  "fields": {
+    "activity_type": "note",
+    "subject": "Lead created",
+    "description": "New enquiry created for sadsad",
+    "details": null,
+    "contact": null,
+    "lead": 4,
+    "deal": null,
+    "content_type": null,
+    "object_id": null,
+    "user": [
+      "hp"
+    ],
+    "activity_date": "2025-09-17T13:03:40.293Z",
+    "created_date": "2025-09-17T13:03:40.293Z",
+    "updated_date": null
+  }
+}
+]

@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: aaa-crm-system
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+      python manage.py migrate
+      python manage.py create_default_superuser
+      python manage.py debug_database
+    startCommand: gunicorn crm_project.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_SSL_REQUIRED
+        value: True
+      # Default superuser credentials - CHANGE THESE!
+      - key: DEFAULT_SUPERUSER_USERNAME
+        value: admin
+      - key: DEFAULT_SUPERUSER_EMAIL
+        value: admin@yourapp.com
+      - key: DEFAULT_SUPERUSER_PASSWORD
+        value: your-secure-password-here
+      - key: USE_S3_MEDIA
+        value: true
+      - key: AWS_ACCESS_KEY_ID
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2ZHR5Z3J5b2xieWp2dHFwaHpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxNTYxNTAsImV4cCI6MjA3NTczMjE1MH0.KPV2IpG9Hh4ffHEUo_LGZpcsBPXY1Rv_lKunqpGvaX4
+      - key: AWS_SECRET_ACCESS_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2ZHR5Z3J5b2xieWp2dHFwaHpqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDE1NjE1MCwiZXhwIjoyMDc1NzMyMTUwfQ.vukgu7tv_PEbGmkluK5OutiPXNswPqY2za8O9i9YDqc
+      - key: AWS_STORAGE_BUCKET_NAME
+        value: crm_proj
+      - key: AWS_S3_REGION_NAME
+        value: auto
+      - key: AWS_S3_CUSTOM_DOMAIN
+        value: https://kvdtygryolbyjvtqphzj.supabase.co/storage/v1/object/public/crm_proj

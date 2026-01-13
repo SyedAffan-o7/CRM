@@ -1,0 +1,2219 @@
+{% extends 'base.html' %}     
+{% load static %}
+
+{% block title %}{% if invoice %}Edit Invoice{% else %}Invoice{% endif %} - AAA CRM{% endblock %}
+{% block page_title %}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  :root {
+    --ink: #0f172a;
+    --ink-soft: #334155;
+    --muted: #6b7280;
+    --paper: #f9fafb;
+    --panel: #ffffff;
+    --accent: #2563eb;
+    --accent-soft: rgba(37, 99, 235, 0.08);
+    --stroke: rgba(15, 23, 42, 0.08);
+    --radius-lg: 22px;
+    --radius-md: 14px;
+    --shadow-soft: 0 25px 55px rgba(15, 23, 42, 0.08);
+  }
+
+  .screen-only { display: block; }
+  .print-only { display: none; }
+
+  body {
+    background: var(--paper);
+  }
+
+  .invoice-sheet {
+    background: var(--panel);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--stroke);
+  }
+
+  .invoice-paper-content {
+    background: radial-gradient(circle at top left, var(--accent-soft), transparent 55%);
+    border-radius: var(--radius-md);
+    padding: 2.25rem;
+    position: relative;
+    margin-top: -10mm;
+
+  }
+
+  .invoice-live-layout {
+    color: var(--ink);
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  .invoice-grid {
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .invoice-grid td,
+  .invoice-grid th {
+    background: #fff;
+    border-color: rgba(15, 23, 42, 0.08) !important;
+    font-size: 0.95rem;
+  }
+
+  .invoice-grid thead th {
+    background: rgba(15, 23, 42, 0.04);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .invoice-grid input,
+  .invoice-grid select,
+  .invoice-grid textarea {
+    border-radius: 10px;
+    border: 1px solid rgba(15, 23, 42, 0.15);
+    min-height: 46px;
+  }
+
+  .invoice-grid textarea {
+    min-height: 110px;
+  }
+
+  #printInvNo,
+  #printDate,
+  #printCustomer,
+  #printAddress,
+  #printTel,
+  #printBuyerTrn,
+  #invoiceNumberPreview,
+  #printBuyerName {
+    font-size: 0.9rem;
+    font-weight: 700;
+    display: inline-block;
+    text-align: center;
+  }
+
+  .print-header-field label {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 0.05rem;
+    line-height: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: center;
+  }
+
+  .print-field-input {
+    border: none;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.4);
+    border-radius: 0;
+    min-height: auto;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding: 0;
+    background: transparent;
+    margin-top: -0.1rem;
+  }
+
+  .print-field-input span,
+  .print-field-input input {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: left;
+    width: 100%;
+    padding: 0;
+  }
+
+  .print-field-input input {
+    border: none;
+    background: transparent;
+  }
+
+  #invoiceNumberPreview,
+  #printBuyerName {
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+
+  .print-only #printInvNo {
+    display: inline-block;
+    min-width: 60mm;
+    text-align: left;
+    padding-left: 20mm;
+  }
+
+  #buyerPhone.form-control {
+    min-height: 56px;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  #buyerTRNInput.form-control {
+    min-height: 56px;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .invoice-meta-label {
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .invoice-signature-box {
+    height: 56px;
+    border: 1px dashed rgba(15, 23, 42, 0.25);
+    border-radius: 12px;
+    margin-top: 0.5rem;
+  }
+
+  .amount-in-words {
+    background: rgba(15, 23, 42, 0.02);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+  }
+
+  .amount-in-words .fw-semibold {
+    font-size: 1.05rem;
+    color: var(--ink);
+  }
+
+  #invoice-items-table tbody tr:hover {
+    background: rgba(37, 99, 235, 0.04);
+  }
+
+  #invoice-items-table .delete-row-btn {
+    color: #dc2626;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    border-radius: 999px;
+    padding-inline: 2.4rem;
+  }
+
+  .btn-outline-primary {
+    border-radius: 999px;
+  }
+
+  @media (max-width: 992px) {
+    .invoice-paper-content {
+      padding: 1.5rem;
+    }
+  }
+
+  @media print {
+    @page { size: A4 portrait; margin: 0; }
+
+    html, body {
+      width: 210mm !important;
+      height: 297mm !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+      color: #000 !important;
+      overflow: visible !important;
+    }
+
+    /* Hide everything on screen */
+    body > * {
+      display: none !important;
+    }
+
+    /* But show the print-only section */
+    .print-only {
+      display: block !important;
+      visibility: visible !important;
+      position: fixed !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 210mm !important;
+      min-height: 297mm !important;
+      z-index: 999999 !important;
+      background: #fff !important;
+      color: #000 !important;
+      overflow: visible !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    .print-only * {
+      visibility: visible !important;
+    }
+
+    .screen-only {
+      display: none !important;
+    }
+  }
+
+  .tax-invoice-sheet {
+    width: 210mm;
+    min-height: 297mm;
+    margin: -10mm auto 0;
+    padding: 40mm 14mm 39.5mm;
+    box-sizing: border-box;
+    color: #000;
+    font-family: Arial, Helvetica, sans-serif;
+    position: relative;
+    overflow: hidden;
+    background: transparent;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .tax-invoice-sheet .tax-bg-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .tax-invoice-sheet .tax-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .tax-title {
+    text-align: center;
+    margin-top: 2mm;
+    margin-bottom: 4mm;
+    line-height: 1.2;
+  }
+  .tax-title .t {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+  }
+  .print-header-field.inline-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .print-header-field.inline-label label {
+    margin-bottom: 0;
+    white-space: nowrap;
+  }
+  .print-header-field.inline-label .print-field-input {
+    flex: 1;
+  }
+  .tax-title .trn {
+    font-size: 12px;
+  }
+
+  .hdr-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4mm;
+    margin-bottom: 6mm;
+    font-size: 12px;
+  }
+  .print-only .hdr-grid {
+    margin-top: 6mm;
+  }
+  .hdr-right { text-align: right; line-height: 1.6; }
+  .invno-red { color: #c00000; font-weight: 700; }
+  .print-only .hdr-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10mm;
+  }
+  .print-only #printInvNo,
+  .print-only #printDate {
+    display: inline-block;
+    transform: translateY(22px);
+  }
+
+  .uline {
+    display: inline-block;
+    border-bottom: 1px solid #000;
+    min-width: 55mm;
+    height: 4mm;
+    vertical-align: baseline;
+  }
+  .uline.long { min-width: 90mm; }
+
+  .cust-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3mm;
+    margin-bottom: 4mm;
+    font-size: 12px;
+  }
+  .cust-grid > div > div {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    margin-bottom: 2mm;
+  }
+  .cust-grid .uline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 8mm;
+    padding: 0 3mm;
+    text-align: left;
+  }
+  .cust-right {
+    text-align: left;
+    padding-right: 4mm;
+  }
+
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    border-left: 1px solid #000;
+    border-right: 1px solid #000;
+    border-bottom: 1px solid #000;
+    font-size: 13px;
+    margin-bottom: 0;
+  }
+  .items-table th,
+  .items-table td {
+    padding: 2.2mm 2mm;
+    vertical-align: top;
+    border-left: 1px solid #000;
+    border-right: 1px solid #000;
+    border-top: none;
+    border-bottom: none;
+  }
+  .items-table thead th {
+    border-top: 1px solid #000;
+    border-bottom: 2px solid #000;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.15;
+  }
+  .items-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .items-table thead .ar {
+    display: block;
+    font-weight: 400;
+    font-size: 12px;
+  }
+  .items-table td,
+  .items-table th {
+    text-align: center;
+  }
+  .items-table tbody td { height: 8mm; }
+  .print-only .items-table tbody td { height: 10mm; }
+  .print-only .items-table {
+    width: calc(100% + 100px - 11mm);
+    margin-left: calc(-50px + 10.5mm);
+    margin-right: calc(-50px + 0.5mm);
+    table-layout: fixed;
+  }
+
+  .print-only .amount-words-block,
+  .print-only .footer-joined-table {
+    width: calc(100% + 100px - 11mm);
+    margin-left: calc(-50px + 10.5mm);
+    margin-right: calc(-50px + 0.5mm);
+  }
+  .footer-joined-table {
+    width: 100%;
+    font-size: 12px;
+    border: none;
+    padding: 0;
+    margin-top: 6mm;
+    position: relative;
+    top: -3mm;
+  }
+  .amount-words-block {
+    border: 0.25mm solid #000;
+    padding: 2mm 2.5mm;
+    border-radius: 1.2mm;
+  }
+  .amount-words-block .footer-split {
+    display: flex;
+    gap: 4mm;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .amount-words-block .amount-left {
+    flex: 1;
+    min-width: 230px;
+  }
+  .amount-words-block .amount-right {
+    flex: 1;
+    min-width: 260px;
+    border: none;
+    padding: 0;
+    border-radius: 0;
+  }
+  .amount-words-block .amount-right .footer-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.8mm;
+    align-items: center;
+  }
+  .amount-words-block .amount-right .tot-label,
+  .amount-words-block .amount-right .tot-value {
+    white-space: nowrap;
+  }
+  .footer-joined-table tr,
+  .footer-joined-table td {
+    border: none;
+    padding: 1mm 1mm;
+    line-height: 1.2;
+  }
+  .footer-joined-table .foot-label {
+    width: 18%;
+    font-weight: 600;
+  }
+  .footer-joined-table .foot-line {
+    width: 32%;
+  }
+  .footer-joined-table .foot-line .uline {
+    width: 100%;
+  }
+  .amount-words-block .uline {
+    border-bottom: none;
+  }
+  .amount-words-block .footer-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+  .amount-words-block .amount-left .foot-label,
+  .amount-words-block .amount-left .foot-line span {
+    white-space: nowrap;
+  }
+  .amount-words-block .amount-left .foot-label {
+    font-weight: 600;
+  }
+  .amount-words-block .amount-left .foot-line span {
+    font-weight: 500;
+  }
+  .amount-words-block .amount-left .foot-label {
+    width: auto;
+    flex: 0 0 auto;
+    margin-right: 1.2mm;
+    font-weight: 500;
+  }
+  .amount-words-block .amount-left .foot-line {
+    width: 100%;
+  }
+  .amount-words-block .amount-left .foot-line span {
+    display: block;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .amount-words-block .declaration-text {
+    font-size: 11px;
+    line-height: 1.4;
+    font-weight: 500;
+    text-transform: none;
+  }
+  .footer-meta-row {
+    width: 100%;
+    display: flex;
+    gap: 4mm;
+    align-items: stretch;
+    margin-top: 0;
+    border-top: 0.2mm solid #000;
+    padding-top: 2mm;
+  }
+  .footer-meta-row .declaration-text {
+    flex: 1.3;
+    margin: 0;
+    border-right: 0.2mm solid #000;
+    padding-right: 4mm;
+  }
+  .footer-meta-row .signature-block {
+    flex: 1;
+    margin: 0;
+    padding-left: 4mm;
+  }
+  .totals-table {
+    width: auto;
+    border-collapse: collapse;
+    margin-left: auto;
+  }
+  .totals-table th {
+    text-align: right;
+    font-weight: 600;
+    padding: 0.5mm 0.9mm;
+    white-space: nowrap;
+    border-bottom: 0.2mm solid #000;
+  }
+  .totals-table td {
+    text-align: right;
+    font-weight: 500;
+    padding: 0.8mm 0.9mm 0.5mm;
+    white-space: nowrap;
+    border-top: 0.2mm solid #000;
+    border-bottom: 0.2mm solid #000;
+  }
+  .totals-table th.grand { font-weight: 700; }
+  .totals-table td.grand { font-weight: 600; }
+  .totals-table .vat-value-cell {
+    text-align: center;
+    padding-top: 0.6mm;
+    padding-bottom: 0.4mm;
+  }
+  .totals-table .vat-value-cell .vat-rate-wrap {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6mm;
+  }
+  .totals-table .vat-value-cell .vat-percent {
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+  .totals-table .vat-value-cell .vat-total-text {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.25px;
+    text-transform: uppercase;
+  }
+  .totals-table .totals-note td {
+    text-align: right;
+    border: none;
+    padding: 0.4mm 0.9mm 0;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .totals-table .totals-note span {
+    font-weight: 600;
+  }
+  .signature-block {
+    margin-top: 3mm;
+    text-align: left;
+  }
+  .signature-block .company-name {
+    font-weight: 700;
+    font-size: 12.5px;
+    letter-spacing: 0.3px;
+    margin-bottom: 3mm;
+    text-transform: uppercase;
+  }
+  .signature-block .signature-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 6mm;
+  }
+  .signature-block .signature-slot {
+    flex: 1;
+    border-top: none;
+    padding-top: 0;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+</style>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'invoices_app:invoice_list' %}" class="btn btn-outline-secondary btn-sm">Back to List</a>
+<button type="button" class="btn btn-outline-primary btn-sm ms-2" id="printBtn">Print</button>
+{% endblock %}
+
+{% block content %}
+<div class="screen-only">
+  <div class="row justify-content-center">
+    <div class="col-xl-11">
+      <form id="invoice-form" method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="invoice-sheet rounded-2 p-3 p-md-4 mb-4">
+          <div class="invoice-paper-content">
+          <div class="invoice-live-layout">
+          <div class="print-header mb-3 d-none">
+            <div class="text-center mb-2">
+              <div class="fw-semibold fs-5">TAX INVOICE</div>
+              <div class="text-muted invoice-compact">TRN # <span id="invoiceTRNHeader"></span></div>
+            </div>
+            <div class="print-header-grid">
+              <div class="print-header-field">
+                <label>Inv.No. VM</label>
+                <div class="print-field-input">
+                  <span id="invoiceNumberPreview">{% if form.invoice_number.value %}{{ form.invoice_number.value }}{% endif %}</span>
+                </div>
+              </div>
+              <div class="print-header-field">
+                <label>Date</label>
+                <div class="print-field-input">
+                  {{ form.issue_date }}
+                  {% for error in form.issue_date.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+              </div>
+              <div class="print-header-field wide">
+                <label>Mr/M/s.</label>
+                <div class="print-field-input head-name">
+                  <span id="printBuyerName">{% if invoice and invoice.contact %}{{ invoice.contact.full_name }}{% endif %}</span>
+                </div>
+              </div>
+              <div class="print-header-field wide">
+                <label>Address</label>
+                <div class="print-field-input">
+                  <span id="printBuyerAddress">{% if invoice %}{{ invoice.contact.address }}{% endif %}</span>
+                </div>
+              </div>
+              <div class="print-header-field">
+                <label>Tel</label>
+                <div class="print-field-input">
+                  <span id="printBuyerPhone">{% if invoice %}{{ invoice.contact.phone_number }}{% endif %}</span>
+                </div>
+              </div>
+              <div class="print-header-field inline-label">
+                <label for="buyerTRNInput">T.R.N</label>
+                <div class="print-field-input">
+                  <input type="text" id="buyerTRNInput" name="buyer_trn" class="form-control" placeholder="Enter TRN" value="">
+                  <div class="form-text">Shown above and in the invoice header.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <div class="table-responsive mb-3">
+          <table class="table table-sm mb-0 invoice-grid invoice-header-grid">
+            <tbody>
+              <tr>
+                <td style="width: 50%;">
+                  <div class="row g-2 align-items-center">
+                    <div class="col-sm-4"><span class="print-hide">Inv.No. VM</span></div>
+                    <div class="col-sm-8">
+                      {{ form.invoice_number }}
+                      {% for error in form.invoice_number.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                    </div>
+                  </div>
+                </td>
+                <td style="width: 50%;">
+                  <div class="row g-2 align-items-center">
+                    <div class="col-sm-3"><span class="print-hide">Date</span></div>
+                    <div class="col-sm-9">
+                      {{ form.issue_date }}
+                      {% for error in form.issue_date.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style="width: 50%; vertical-align: top;">
+                  <div class="row g-2 align-items-center mb-2">
+                    <div class="col-sm-4 print-hide"><span class="fw-semibold">Mr/M/s.</span></div>
+                    <div class="col-sm-8 head-name">
+                      {{ form.contact }}
+                      {% for error in form.contact.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                    </div>
+                  </div>
+                  <div class="row g-2 align-items-center mb-2 ">
+                    <div class="col-sm-4 print-hide"><span class="fw-semibold">Address</span></div>
+                    <div class="col-sm-8">
+                      <input type="text"
+                             id="buyerAddress"
+                             class="form-control"
+                             placeholder="Address"
+                             autocomplete="street-address"
+                             value="{% if invoice and invoice.contact %}{{ invoice.contact.address }}{% endif %}"
+                             readonly>
+                    </div>
+                  </div>
+                </td>
+                <td style="width: 50%; vertical-align: top;">
+                  <div class="row g-2 align-items-center mb-2">
+                    <div class="col-sm-4 print-hide"><span class="fw-semibold">Tel</span></div>
+                    <div class="col-sm-8">
+                      <input type="text"
+                             id="buyerPhone"
+                             class="form-control"
+                             placeholder="Tel"
+                             autocomplete="tel"
+                             value="{% if invoice and invoice.contact %}{{ invoice.contact.phone_number }}{% endif %}"
+                             readonly>
+                    </div>
+                  </div>
+                  <div class="row g-2 align-items-center mb-2">
+                    <div class="col-sm-4 print-hide"><span class="fw-semibold">T.R.N</span></div>
+                    <div class="col-sm-8">
+                      <input type="text" id="buyerTRNInput" name="buyer_trn" class="form-control w-100" placeholder="Enter TRN" autocomplete="tax-id" value="">
+                      <div class="form-text">Shown above and in the invoice header.</div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              {# Hide meta row from display but keep inputs so form submission stays intact #}
+              <tr class="d-none">
+                <td colspan="2">
+                  <div class="row g-2 align-items-center mb-2">
+                    <div class="col-sm-4"><span class="fw-semibold">Due Date</span></div>
+                    <div class="col-sm-8">
+                      {{ form.due_date }}
+                      {% for error in form.due_date.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                    </div>
+                  </div>
+                  <div class="row g-2 align-items-center mb-2">
+                    <div class="col-sm-4"><span class="fw-semibold">Country</span></div>
+                    <div class="col-sm-8">
+                      <input type="text" class="form-control" id="buyerCountry" placeholder="Auto from phone" autocomplete="country-name" readonly>
+                      <div class="d-none">
+                        {{ form.currency }}
+                        {% for error in form.currency.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row g-2 align-items-center mb-2">
+                    <div class="col-sm-4"><span class="fw-semibold">Status</span></div>
+                    <div class="col-sm-8">
+                      {{ form.status }}
+                      {% for error in form.status.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                    </div>
+                  </div>
+                  <div class="row g-2 align-items-center mb-2">
+                    <div class="col-sm-4"><span class="fw-semibold">Related Enquiry</span></div>
+                    <div class="col-sm-8">
+                      {{ form.lead }}
+                      {% for error in form.lead.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                    </div>
+                  </div>
+                  <div class="row g-2 align-items-center">
+                    <div class="col-sm-4"><span class="fw-semibold">PI Number</span></div>
+                    <div class="col-sm-8">
+                      <input type="text" class="form-control" id="piNumber" name="pi_number" value="{{ pi_number|default:'' }}">
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="invoice-print-table-area">
+          <div class="table-responsive mb-2">
+            {{ formset.management_form }}
+            <table id="invoice-items-table" class="table table-sm mb-0 invoice-grid">
+
+            <thead class="print-hide">
+              <tr>
+                <th style="width: 55px;">Sl No.</th>
+                <th>Description of Goods</th>
+                <th style="width: 120px;">Quantity</th>
+                <th style="width: 150px;">Rate (Incl. VAT)</th>
+                <th style="width: 120px;">Rate (per)</th>
+                <th style="width: 100px;" class="text-center">Per</th>
+                <th style="width: 150px;" class="text-end">Amount</th>
+                <th style="width: 90px;" class="text-end">VAT %</th>
+                <th style="width: 140px;" class="text-end">VAT (AED)</th>
+                <th style="width: 150px;" class="text-end">Total (Incl. VAT)</th>
+                <th style="width: 48px;"></th>
+              </tr>
+            </thead>
+           <tbody>
+  {% for item_form in formset %}
+  <tr class="{% if forloop.counter > 1 and not item_form.instance.pk %}invoice-row-hidden{% endif %}"
+      {% if forloop.counter > 1 and not item_form.instance.pk %}style="display:none;"{% endif %}>
+    
+    <!-- Serial Number -->
+    <td class="text-center">
+      <span class="srno-print">{{ forloop.counter }}</span>
+    </td>
+    
+    <!-- Description (stays static) -->
+    <td>
+      <span class="desc-print">{{ item_form.description }}</span>
+      {% for error in item_form.description.errors %}
+        <div class="text-danger small">{{ error }}</div>
+      {% endfor %}
+    </td>
+    
+    <!-- Quantity -->
+    <td>
+      <span class="qty-print">{{ item_form.quantity }}</span>
+      {% for error in item_form.quantity.errors %}
+        <div class="text-danger small">{{ error }}</div>
+      {% endfor %}
+    </td>
+    
+    <!-- Rate -->
+    <td>
+      <span class="rate-print">0.00</span>
+    </td>
+    
+    <!-- Unit Price -->
+    <td>
+      <span class="unit-price-print">{{ item_form.unit_price }}</span>
+      {% for error in item_form.unit_price.errors %}
+        <div class="text-danger small">{{ error }}</div>
+      {% endfor %}
+      <div class="d-none">{{ item_form.discount_percent }}</div>
+    </td>
+    
+    <!-- Per column -->
+    <td class="text-center">
+      <span class="per-print">pcs</span>
+    </td>
+    
+    <!-- Amount -->
+    <td class="text-end">
+      <span class="amount-print invoice-line-amount">0.00</span>
+    </td>
+    
+    <!-- VAT Rate -->
+    <td class="text-end">
+      <span class="vat-rate-print">
+        <input type="number" class="form-control form-control-sm text-end invoice-line-vat-rate-input" value="5" step="0.01" min="0">
+      </span>
+    </td>
+    
+    <!-- VAT -->
+    <td class="text-end">
+      <span class="vat-print">0.00</span>
+    </td>
+    
+    <!-- Total -->
+    <td class="text-end">
+      <span class="total-print">0.00</span>
+    </td>
+    
+    <!-- Delete -->
+    <td class="text-center">
+      {% if item_form.instance.pk %}
+      <div class="form-check">
+        {{ item_form.DELETE }}
+      </div>
+      {% endif %}
+      <button type="button" class="btn btn-link text-danger p-0 delete-row-btn" title="Delete row">
+        <i class="bi bi-trash"></i>
+      </button>
+    </td>
+    
+  </tr>
+  {% endfor %}
+</tbody>
+
+          </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <small class="text-muted print-hide">Only the first row is shown by default; click + to add more.</small>
+          <button type="button" class="btn btn-outline-primary btn-sm" id="add-invoice-row"><i class="bi bi-plus"></i> Add row</button>
+        </div>
+
+        <div class="row g-3 align-items-start mb-3">
+          <div class="col-lg-7 print-left-column">
+            <div class="mb-3">
+              <div class="print-hide">{{ form.notes.label_tag }}</div>
+              {{ form.notes }}
+              {% for error in form.notes.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="invoice-compact amount-in-words">
+              <div class="text-muted">Amount Chargeable (in words)</div>
+              <div class="fw-semibold" id="invoice-amount-words">-</div>
+              <div class="text-muted mt-2">VAT Amount (in words)</div>
+              <div class="fw-semibold" id="invoice-vat-words">-</div>
+            </div>
+          </div>
+          <div class="col-lg-5">
+            <table class="table table-sm mb-0 invoice-grid">
+              <tbody>
+                <tr>
+                  <td class="invoice-meta-label"><span class="print-hide">Sub Total</span></td>
+                  <td class="text-end"><span class="fw-semibold" id="invoice-subtotal-preview">0.00</span></td>
+                </tr>
+                <tr>
+                  <td class="invoice-meta-label"><span class="print-hide">VAT @</span> <input type="number" id="vatRateInput" value="5" step="0.01" min="0" class="form-control d-inline-block print-hide" style="width:90px;"><span class="print-hide">%</span></td>
+                  <td class="text-end"><span class="fw-semibold" id="invoice-vat-preview">0.00</span></td>
+                </tr>
+                <tr>
+                  <td class="invoice-meta-label"><span class="print-hide">Grand Total</span></td>
+                  <td class="text-end"><span class="fw-semibold" id="invoice-total-preview">0.00</span></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="mt-2">
+              <small class="text-muted print-hide">You can leave extra rows blank; they will be ignored.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive mb-3">
+          <table class="table table-sm mb-0 invoice-grid">
+            <tbody>
+              <tr>
+                <td style="width: 33.33%;">
+                  <div class="fw-semibold print-hide">Prepared by</div>
+                  <div class="invoice-signature-box"></div>
+                </td>
+                <td style="width: 33.33%;">
+                  <div class="fw-semibold print-hide">Verified by</div>
+                  <div class="invoice-signature-box"></div>
+                </td>
+                <td style="width: 33.33%;">
+                  <div class="fw-semibold print-hide">Authorised Signatory</div>
+                  <div class="invoice-signature-box"></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+          <button type="submit" class="btn btn-primary">
+            {% if invoice %}Save Changes{% else %}Save Invoice{% endif %}
+          </button>
+        </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="print-only">
+  <div class="tax-invoice-sheet">
+    <!-- <img src="{% static 'images/invoice_letterhead.png' %}" alt="" class="tax-bg-image"> -->
+    <div class="tax-content">
+    <div class="hdr-grid">
+      <div>
+        <span class="invno-red" id="printInvNo">{% if form.invoice_number.value %}{{ form.invoice_number.value }}{% else %}&nbsp;{% endif %}</span>
+      </div>
+      <div class="hdr-right">
+        <div><span id="printDate">{% if form.issue_date.value %}{{ form.issue_date.value }}{% else %}&nbsp;{% endif %}</span></div>
+      </div>
+    </div>
+
+    <div class="cust-grid">
+      <div>
+        <div>Mr./Ms. <span class="uline long"><span id="printCustomer">{% if invoice and invoice.contact %}{{ invoice.contact.full_name }}{% else %}&nbsp;{% endif %}</span></span></div>
+        <div>Address <span class="uline long"><span id="printAddress">{% if invoice and invoice.contact %}{{ invoice.contact.address }}{% else %}&nbsp;{% endif %}</span></span></div>
+      </div>
+      <div class="cust-right">
+        <div>T.R.N <span class="uline long"><span id="printBuyerTrn">&nbsp;</span></span></div>
+        <div>Tel&nbsp; <span class="uline long"><span id="printTel">{% if invoice and invoice.contact %}{{ invoice.contact.phone_number }}{% else %}&nbsp;{% endif %}</span></span></div>
+      </div>
+    </div>
+
+    <table class="items-table" aria-label="Invoice items">
+      <thead>
+        <tr>
+          <th style="width: 6%;">S.No<span class="ar">الرقم</span></th>
+          <th style="width: calc(32% - 0.5mm);">Description<span class="ar">التفاصيل</span></th>
+          <th style="width: 8%;">Quantity<span class="ar">العدد</span></th>
+          <th style="width: 9%;">Rate (Incl. VAT)<span class="ar">السعر ش.ض</span></th>
+          <th style="width: 9%;">Rate (per)<span class="ar">سعر الوحدة</span></th>
+          <th style="width: 6%;">Per<span class="ar">الوحدة</span></th>
+          <th style="width: 9%;">Amount<span class="ar">المبلغ</span></th>
+          <th style="width: 6%;">VAT %<span class="ar">ضريبة %</span></th>
+          <th style="width: 8%;">VAT (AED)<span class="ar">قيمة الضريبة</span></th>
+          <th style="width: 11%;">Total (Incl. VAT)<span class="ar">الإجمالي</span></th>
+        </tr>
+      </thead>
+      <tbody id="print-items-body">
+        {% for item_form in formset %}
+        <tr>
+          <td class="center">{{ forloop.counter }}</td>
+          <td class="print-item-desc">{% if item_form.description.value %}{{ item_form.description.value }}{% endif %}</td>
+          <td class="center print-item-qty">{% if item_form.quantity.value %}{{ item_form.quantity.value }}{% endif %}</td>
+          <td class="num print-item-rate-incl">&nbsp;</td>
+          <td class="num print-item-rate-per">{% if item_form.unit_price.value %}{{ item_form.unit_price.value }}{% endif %}</td>
+          <td class="center print-item-per">pcs</td>
+          <td class="num print-item-amount">&nbsp;</td>
+          <td class="center print-item-vat-rate">5</td>
+          <td class="num print-item-vat-amt">&nbsp;</td>
+          <td class="num print-item-total">&nbsp;</td>
+        </tr>
+        {% endfor %}
+        {% for i in "0123456789ABCDEF"|make_list %}{% if forloop.counter > formset|length and forloop.counter <= 15 %}
+        <tr>
+          <td class="center"></td>
+          <td class="print-item-desc">&nbsp;</td>
+          <td class="center print-item-qty">&nbsp;</td>
+          <td class="num print-item-rate-incl">&nbsp;</td>
+          <td class="num print-item-rate-per">&nbsp;</td>
+          <td class="center print-item-per">&nbsp;</td>
+          <td class="num print-item-amount">&nbsp;</td>
+          <td class="center print-item-vat-rate">&nbsp;</td>
+          <td class="num print-item-vat-amt">&nbsp;</td>
+          <td class="num print-item-total">&nbsp;</td>
+        </tr>
+        {% endif %}{% endfor %}
+      </tbody>
+    </table>
+
+    <div class="footer-joined-table amount-words-block">
+      <div class="footer-split">
+        <div class="amount-left">
+          <div class="footer-row">
+            <div class="foot-label">Amount Chargeable:</div>
+            <div class="foot-line"><span id="printAmountWords">Zero AED Only</span></div>
+          </div>
+          <div class="footer-row">
+            <div class="foot-label">VAT Amount:</div>
+            <div class="foot-line"><span id="printVatWords">Zero AED Only</span></div>
+          </div>
+        </div>
+        <div class="amount-right">
+          <table class="totals-table">
+            <thead>
+              <tr>
+                <th>VAT %</th>
+                <th>Assessable Value</th>
+                <th>Tax Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="vat-value-cell">
+                  <span class="vat-rate-wrap">
+                    <span class="vat-percent" id="printVatRateNote">5%</span>
+                  </span>
+                </td>
+                <td id="printSubtotal">0.00</td>
+                <td id="printVatTotal">0.00</td>
+              </tr>
+              <tr class="totals-note">
+                <td>TOTAL</td>
+                <td><span id="printSubtotalNote">0.00</span></td>
+                <td><span id="printVatTotalNote">0.00</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footer-meta-row">
+          <div class="declaration-text">
+            <strong>Declaration:</strong> We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.
+          </div>
+          <div class="signature-block">
+            <div class="signature-row">
+              <div class="signature-slot">Prepared by</div>
+              <div class="signature-slot">Verified by</div>
+              <div class="signature-slot">Authorised Signatory</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script id="contact-meta-data" type="application/json">{{ contact_meta_json|default:"{}"|safe }}</script>
+<script>
+console.log('Invoice form script loaded');
+document.addEventListener('DOMContentLoaded', function() {
+    var initialLeadId = '{{ form.lead.value|default:"" }}';
+    var select = document.getElementById('id_contact');
+    var leadSelect = document.getElementById('id_lead');
+    // Items table rows: show only first two rows by default (or rows that already have values)
+    var itemRows = Array.from(document.querySelectorAll('#invoice-items-table tbody tr'));
+    var trnInput = document.getElementById('buyerTRNInput');
+    var trnHeader = document.getElementById('invoiceTRNHeader');
+    var buyerPhoneInput = document.getElementById('buyerPhone');
+    var buyerAddressInput = document.getElementById('buyerAddress');
+    var contactInputField = null;
+    var contactMeta = {};
+    var metaEl = document.getElementById('contact-meta-data');
+    if (metaEl && metaEl.textContent) {
+        try {
+            contactMeta = JSON.parse(metaEl.textContent);
+            console.log('Loaded contactMeta:', contactMeta);
+        } catch (err) {
+            console.error('Failed to parse contact metadata:', err);
+            contactMeta = {};
+        }
+    } else {
+        console.warn('contact-meta-data element not found or empty');
+    }
+
+    function attachRowListeners(row) {
+        ['quantity', 'unit_price', 'discount_percent'].forEach(function(fieldSuffix) {
+            var input = row.querySelector('input[name$="-' + fieldSuffix + '"]');
+            if (input) {
+                input.addEventListener('input', function() { recalcAll(); });
+            }
+        });
+    }
+
+    function num(val) {
+        var n = parseFloat((val || '').toString().replace(',', '.'));
+        return isNaN(n) ? 0 : n;
+    }
+
+    function setText(id, value) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var v = (value || '').toString().trim();
+        el.textContent = v || '';
+    }
+
+    function setAllText(id, value) {
+        var nodes = document.querySelectorAll('[id="' + id + '"]');
+        nodes.forEach(function(node) {
+            if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
+                node.value = value || '';
+            } else {
+                node.textContent = value || '';
+            }
+        });
+    }
+
+    function getFirstText(id) {
+        var node = document.querySelector('[id="' + id + '"]');
+        if (!node) return '';
+        if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
+            return node.value || '';
+        }
+        return node.textContent || '';
+    }
+
+    function syncPrintLayout() {
+        var invNoInput = document.getElementById('id_invoice_number');
+        if (invNoInput) {
+            setText('printInvNo', invNoInput.value);
+            setText('invoiceNumberPreview', invNoInput.value);
+        }
+
+        var dateInput = document.getElementById('id_issue_date');
+        if (dateInput) setText('printDate', dateInput.value);
+
+        setText('printTel', getFirstText('buyerPhone'));
+
+        setText('printAddress', getFirstText('buyerAddress'));
+
+        var trnInputLocal = document.getElementById('buyerTRNInput');
+        if (trnInputLocal) setText('printBuyerTrn', trnInputLocal.value);
+
+        var contactText = '';
+        var typeahead = document.getElementById('contact_typeahead');
+        if (typeahead && typeahead.value) {
+            contactText = typeahead.value;
+        } else if (select && select.options && select.selectedIndex >= 0) {
+            contactText = (select.options[select.selectedIndex].text || '').trim();
+        }
+        setText('printCustomer', contactText);
+
+        var printBody = document.getElementById('print-items-body');
+        if (!printBody) return;
+
+        // Rebuild print table from current form inputs (screen table)
+        printBody.innerHTML = '';
+
+        var subtotal = 0;
+        var vatTotal = 0;
+        var vatRate = (typeof currentVatRate === 'function') ? currentVatRate() : 5;
+        if (isNaN(vatRate)) vatRate = 5;
+        var discountTotal = 0;
+        var headerVatRate = null;
+
+        function formatRateDisplay(val) {
+            var parsed = parseFloat(val);
+            if (isNaN(parsed)) parsed = 0;
+            if (Math.abs(parsed % 1) < 0.001) {
+                return parsed.toFixed(0);
+            }
+            return parsed.toFixed(2).replace(/\.00$/, '');
+        }
+
+        var screenRows = Array.from(document.querySelectorAll('#invoice-items-table tbody tr'));
+        var rowNo = 1;
+        screenRows.forEach(function(row) {
+            if (row.style.display === 'none') return;
+            var descInput = row.querySelector('input[name$="-description"]');
+            var qtyInput = row.querySelector('input[name$="-quantity"]');
+            var priceInput = row.querySelector('input[name$="-unit_price"]');
+            var discInput = row.querySelector('input[name$="-discount_percent"]');
+
+            var desc = descInput ? (descInput.value || '').trim() : '';
+            var qty = qtyInput ? num(qtyInput.value) : 0;
+            var price = priceInput ? num(priceInput.value) : 0;
+            var disc = discInput ? num(discInput.value) : 0;
+
+            if (!desc && !qty && !price) return;
+
+            if (disc < 0) disc = 0;
+            if (disc > 100) disc = 100;
+
+            var rowVatRate = vatRate;
+            var rowVatInput = row.querySelector('.invoice-line-vat-rate-input');
+            if (rowVatInput && rowVatInput.value !== '') {
+                var parsedVat = parseFloat(rowVatInput.value);
+                if (!isNaN(parsedVat)) rowVatRate = parsedVat;
+            }
+            if (headerVatRate === null) {
+                headerVatRate = rowVatRate;
+            }
+
+            var lineGross = qty * price;
+            var lineDiscount = lineGross * (disc / 100);
+            var lineNet = lineGross - lineDiscount;
+            var lineVat = lineNet * (rowVatRate / 100);
+            var lineTotal = lineNet + lineVat;
+
+            subtotal += lineNet;
+            vatTotal += lineVat;
+            discountTotal += lineDiscount;
+
+            var rateIncl = qty ? (lineTotal / qty) : lineTotal;
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td class="center">' + rowNo + '</td>' +
+                '<td class="print-item-desc">' + (desc ? escapeHtml(desc) : '&nbsp;') + '</td>' +
+                '<td class="center print-item-qty">' + (qty ? qty : '&nbsp;') + '</td>' +
+                '<td class="num print-item-rate-incl">' + (rateIncl ? rateIncl.toFixed(2) : '0.00') + '</td>' +
+                '<td class="num print-item-rate-per">' + (price ? price.toFixed(2) : '0.00') + '</td>' +
+                '<td class="center print-item-per">pcs</td>' +
+                '<td class="num print-item-amount">' + (lineNet ? lineNet.toFixed(2) : '0.00') + '</td>' +
+                '<td class="center print-item-vat-rate">' + formatRateDisplay(rowVatRate) + '</td>' +
+                '<td class="num print-item-vat-amt">' + (lineVat ? lineVat.toFixed(2) : '0.00') + '</td>' +
+                '<td class="num print-item-total">' + (lineTotal ? lineTotal.toFixed(2) : '0.00') + '</td>';
+            printBody.appendChild(tr);
+            rowNo += 1;
+        });
+
+        if (headerVatRate === null) {
+            headerVatRate = vatRate;
+        }
+
+        var total = subtotal;
+        var grandTotal = total + vatTotal;
+
+        var subtotalText = subtotal ? subtotal.toFixed(2) : '0.00';
+        var vatTotalText = vatTotal ? vatTotal.toFixed(2) : '0.00';
+        var grandTotalText = grandTotal ? grandTotal.toFixed(2) : '0.00';
+
+        setText('printSubtotal', subtotalText);
+        setText('printDiscount', discountTotal ? discountTotal.toFixed(2) : '0.00');
+        setText('printTotal', total ? total.toFixed(2) : '0.00');
+        setText('printVatTotal', vatTotalText);
+        setText('printGrandTotal', grandTotalText);
+
+        setText('printSubtotalNote', subtotalText);
+        setText('printVatTotalNote', vatTotalText);
+        setText('printGrandTotalNote', grandTotalText);
+        var vatRateDisplay = formatRateDisplay(headerVatRate) + '%';
+        setText('printVatRate', formatRateDisplay(headerVatRate));
+        setText('printVatRateNote', vatRateDisplay);
+
+        try {
+            setText('printAmountWords', amountToWords(total));
+        } catch (err) {
+            console.warn('Failed to set print amount words', err);
+        }
+        try {
+            setText('printVatWords', amountToWords(vatTotal));
+        } catch (err2) {
+            console.warn('Failed to set print VAT words', err2);
+        }
+
+        var desiredRows = 15;
+        var currentRows = printBody.querySelectorAll('tr').length;
+        for (var i = currentRows; i < desiredRows; i++) {
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td class="center">&nbsp;</td>' +
+                '<td>&nbsp;</td>' +
+                '<td class="center">&nbsp;</td>' +
+                '<td class="num">&nbsp;</td>' +
+                '<td class="num">&nbsp;</td>' +
+                '<td class="center">&nbsp;</td>' +
+                '<td class="num">&nbsp;</td>' +
+                '<td class="center">&nbsp;</td>' +
+                '<td class="num">&nbsp;</td>' +
+                '<td class="num">&nbsp;</td>';
+            printBody.appendChild(tr);
+        }
+    }
+
+    function escapeHtml(text) {
+        return (text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // Move print-only section to body so it becomes a direct child and isn't hidden by print CSS
+    var printOnlySection = document.querySelector('.print-only');
+    if (printOnlySection && printOnlySection.parentElement !== document.body) {
+        document.body.appendChild(printOnlySection);
+    }
+
+    var printBtn = document.getElementById('printBtn');
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            try { syncPrintLayout(); } catch (e) { console.error('syncPrintLayout error:', e); }
+            // Give the browser a moment to render the updated print DOM before opening print preview
+            setTimeout(function() {
+                window.print();
+            }, 100);
+        });
+    }
+
+    window.addEventListener('beforeprint', function() {
+        try { syncPrintLayout(); } catch (e) { console.error('syncPrintLayout error:', e); }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+P / Cmd+P
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+            try { syncPrintLayout(); } catch (ex) { console.error('syncPrintLayout error:', ex); }
+        }
+    });
+
+    function safeSyncPrintLayout() {
+        try { syncPrintLayout(); } catch (e) {}
+    }
+
+    // Keep print view populated even before opening print preview
+    var invNoInput = document.getElementById('id_invoice_number');
+    if (invNoInput) invNoInput.addEventListener('input', safeSyncPrintLayout);
+    var dateInput = document.getElementById('id_issue_date');
+    if (dateInput) dateInput.addEventListener('input', safeSyncPrintLayout);
+    if (trnInput) trnInput.addEventListener('input', safeSyncPrintLayout);
+
+    // When any line item input changes, refresh print table
+    itemRows.forEach(function(row) {
+        var inputs = row.querySelectorAll('input, select, textarea');
+        inputs.forEach(function(inp) {
+            inp.addEventListener('input', safeSyncPrintLayout);
+            inp.addEventListener('change', safeSyncPrintLayout);
+        });
+    });
+
+    function attachDeleteListener(row) {
+        var btn = row.querySelector('.delete-row-btn');
+        if (!btn) return;
+        btn.addEventListener('click', function() {
+            var visible = itemRows.filter(function(r) { return r.style.display !== 'none'; }).length;
+            // Keep at least 1 row visible
+            if (visible <= 1) return;
+
+            var delInput = row.querySelector('input[name$="-DELETE"]');
+            if (delInput) {
+                delInput.checked = true;
+            }
+            // Clear inputs for new rows
+            ['description', 'quantity', 'unit_price', 'discount_percent'].forEach(function(suffix) {
+                var inp = row.querySelector('input[name$="-' + suffix + '"]');
+                if (inp) inp.value = '';
+            });
+            row.style.display = 'none';
+            row.classList.add('invoice-row-hidden');
+            row.removeAttribute('data-persist-visible');
+            renumberVisibleRows();
+            recalcAll();
+        });
+    }
+
+    function updateDeleteButtons() {
+        var visibleRows = itemRows.filter(function(r) { return r.style.display !== 'none'; });
+        visibleRows.forEach(function(row, idx) {
+            var btn = row.querySelector('.delete-row-btn');
+            if (btn) {
+                btn.style.display = (idx < 1) ? 'none' : '';
+            }
+        });
+    }
+
+    function rowHasValue(row) {
+        var descInput = row.querySelector('input[name$="-description"]');
+        var qtyInput = row.querySelector('input[name$="-quantity"]');
+        var priceInput = row.querySelector('input[name$="-unit_price"]');
+        var discInput = row.querySelector('input[name$="-discount_percent"]');
+
+        var descVal = descInput ? (descInput.value || '').trim() : '';
+        var qtyVal = qtyInput ? (qtyInput.value || '').trim() : '';
+        var priceVal = priceInput ? (priceInput.value || '').trim() : '';
+        var discVal = discInput ? (discInput.value || '').trim() : '';
+
+        // Treat qty default of 1 as empty; consider row filled only if description
+        // or price or discount or a non-default qty is entered.
+        var hasValue = false;
+        if (descVal) hasValue = true;
+        if (priceVal) hasValue = true;
+        if (discVal) hasValue = true;
+        if (qtyVal && qtyVal !== '0' && qtyVal !== '1') hasValue = true;
+        return hasValue;
+    }
+    function renumberVisibleRows() {
+        var counter = 1;
+        itemRows.forEach(function(row) {
+            if (row.style.display !== 'none') {
+                var noSpan = row.querySelector('.srno-print');
+                if (noSpan) noSpan.textContent = counter;
+                counter += 1;
+            }
+        });
+        updateDeleteButtons();
+    }
+    function showInitialRows() {
+        var visibleCount = 0;
+        itemRows.forEach(function(row) {
+            var idInput = row.querySelector('input[name$="-id"]');
+            var isExisting = idInput && idInput.value;
+            var shouldShow = false;
+
+            if (isExisting) {
+                shouldShow = true; // editing existing item
+            } else if (row.dataset.persistVisible === '1') {
+                shouldShow = true; // user-added or autofilled
+            } else if (rowHasValue(row)) {
+                shouldShow = true; // user typed something
+            } else if (visibleCount < 1) {
+                shouldShow = true; // keep first blank visible
+            }
+
+            if (shouldShow) {
+                row.style.display = '';
+                row.classList.remove('invoice-row-hidden');
+                row.dataset.persistVisible = '1';
+                visibleCount += 1;
+            } else {
+                row.style.display = 'none';
+                row.classList.add('invoice-row-hidden');
+                row.removeAttribute('data-persist-visible');
+            }
+        });
+        renumberVisibleRows();
+    }
+    showInitialRows();
+    recalcAll();
+
+    function syncTRNToHeader() {
+        if (!trnHeader || !trnInput) return;
+        var val = (trnInput.value || '').trim();
+        trnHeader.textContent = val || '';
+    }
+    if (trnInput) {
+        trnInput.addEventListener('input', syncTRNToHeader);
+        syncTRNToHeader();
+    }
+
+    // Initial population
+    safeSyncPrintLayout();
+
+    // --- Contact typeahead (only if contact select exists) ---
+    if (select) {
+        var parent = select.parentElement;
+        if (parent) {
+            var wrapper = document.createElement('div');
+            wrapper.className = 'position-relative';
+            parent.insertBefore(wrapper, select);
+            wrapper.appendChild(select);
+
+            select.style.display = 'none';
+
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.id = 'contact_typeahead';
+            input.className = 'form-control';
+            input.classList.add('contact-typeahead');
+            input.placeholder = 'Start typing customer name';
+            wrapper.insertBefore(input, select);
+            contactInputField = input;
+
+            var dropdown = document.createElement('div');
+            dropdown.className = 'list-group position-absolute w-100';
+            dropdown.style.maxHeight = '200px';
+            dropdown.style.overflowY = 'auto';
+            dropdown.style.zIndex = '1080';
+            dropdown.style.display = 'none';
+            wrapper.appendChild(dropdown);
+
+            var allOptions = Array.prototype.filter.call(select.options, function(opt) {
+                return opt.value;
+            }).map(function(opt) {
+                var meta = contactMeta[opt.value] || {};
+                var nameOnly = (meta.name || '').trim();
+                var phonePart = (meta.phone || '').trim();
+                var addressPart = (meta.address || '').trim();
+                if (!nameOnly) {
+                    var text = opt.text || '';
+                    var parts = text.split(' - ');
+                    nameOnly = parts[0] ? parts[0].trim() : text.trim();
+                }
+                opt.dataset.nameOnly = nameOnly;
+                opt.dataset.phone = phonePart;
+                opt.dataset.address = addressPart;
+                opt.dataset.contactId = opt.value;
+                opt.text = nameOnly; // show name only in dropdown
+                return opt;
+            });
+
+            function applyOptionSelection(opt) {
+                if (!opt) return;
+                console.log('applyOptionSelection for contact', opt.value, opt.dataset);
+                select.value = opt.value;
+                var changeEvent = new Event('change', { bubbles: true });
+                select.dispatchEvent(changeEvent);
+                input.value = opt.dataset.nameOnly || opt.text;
+                if (leadSelect && opt.value) {
+                    loadLeadsForContact(opt.value);
+                }
+                updateBuyerContactDisplay(opt.dataset);
+            }
+
+            function commitTypedValue() {
+                var typed = (input.value || '').trim().toLowerCase();
+                if (!typed) return;
+                var exact = allOptions.find(function(opt) {
+                    return (opt.dataset.nameOnly || opt.text).toLowerCase() === typed;
+                });
+                if (exact) {
+                    applyOptionSelection(exact);
+                }
+            }
+
+            function renderOptions(term) {
+                dropdown.innerHTML = '';
+                var lower = term.toLowerCase();
+                var matches = allOptions;
+                if (lower) {
+                    matches = allOptions.filter(function(opt) {
+                        return opt.text.toLowerCase().indexOf(lower) !== -1;
+                    });
+                }
+                if (!matches.length) {
+                    dropdown.style.display = 'none';
+                    return;
+                }
+                matches.slice(0, 30).forEach(function(opt) {
+                    var item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'list-group-item list-group-item-action';
+                    item.textContent = opt.text;
+                    item.dataset.value = opt.value;
+                    item.addEventListener('click', function() {
+                        applyOptionSelection(opt);
+                        dropdown.style.display = 'none';
+                    });
+                    dropdown.appendChild(item);
+                });
+                dropdown.style.display = 'block';
+            }
+
+            input.addEventListener('input', function() {
+                renderOptions(this.value);
+            });
+
+            input.addEventListener('focus', function() {
+                renderOptions(this.value);
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (dropdown.style.display !== 'none') {
+                        var firstItem = dropdown.querySelector('.list-group-item');
+                        if (firstItem) {
+                            var opt = allOptions.find(function(option) {
+                                return option.value === firstItem.dataset.value;
+                            });
+                            applyOptionSelection(opt || null);
+                            dropdown.style.display = 'none';
+                            return;
+                        }
+                    }
+                    commitTypedValue();
+                }
+            });
+
+            input.addEventListener('blur', function() {
+                commitTypedValue();
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!wrapper.contains(e.target)) {
+                    dropdown.style.display = 'none';
+                }
+            });
+
+            var selected = select.options[select.selectedIndex];
+            if (selected) {
+                input.value = selected.dataset.nameOnly || selected.text;
+                if (leadSelect && selected.value) {
+                    loadLeadsForContact(selected.value);
+                }
+                updateBuyerContactDisplay(selected.dataset);
+            }
+        }
+    }
+
+    if (select) {
+        select.addEventListener('change', function() {
+            console.log('Contact select changed. Selected value:', this.value);
+            var meta = contactMeta[this.value] || {};
+            console.log('Contact metadata:', meta);
+            if (contactInputField) {
+                contactInputField.value = meta.name || '';
+            }
+            updateBuyerContactDisplay(meta);
+            if (leadSelect && this.value) {
+                loadLeadsForContact(this.value);
+            } else if (leadSelect) {
+                leadSelect.innerHTML = '';
+            }
+        });
+    }
+
+    function updateBuyerContactDisplay(data) {
+        console.log('updateBuyerContactDisplay called with data:', data);
+        var countryInput = document.getElementById('buyerCountry');
+        var currencyField = document.getElementById('id_currency');
+
+        var phoneVal = '';
+        if (data && typeof data.phone !== 'undefined') {
+            phoneVal = data.phone || '';
+        } else if (data && data.dataset && typeof data.dataset.phone !== 'undefined') {
+            phoneVal = data.dataset.phone || '';
+        }
+        if (!phoneVal) phoneVal = getFirstText('buyerPhone').trim();
+        console.log('Phone value to set:', phoneVal);
+        setAllText('buyerPhone', phoneVal);
+
+        var inferredCountry = countryFromPhone(phoneVal);
+        if (countryInput) {
+            countryInput.value = inferredCountry || '';
+        }
+        if (currencyField && inferredCountry) {
+            currencyField.value = 'AED';
+        }
+
+        var addressText = '';
+        if (data && typeof data.address !== 'undefined') {
+            addressText = data.address || '';
+        } else if (data && data.dataset && typeof data.dataset.address !== 'undefined') {
+            addressText = data.dataset.address || '';
+        }
+        if (!addressText) {
+            addressText = inferredCountry || '';
+        }
+        console.log('Address value to set:', addressText);
+        setAllText('buyerAddress', addressText);
+    }
+    // On load, if phone already present and no country/address, fill them
+    (function initCountryFromExistingPhone() {
+        var phoneVal = getFirstText('buyerPhone').trim();
+        var countryInput = document.getElementById('buyerCountry');
+        if (!phoneVal) return;
+        var country = countryFromPhone(phoneVal);
+        if (!country) return;
+        setAllText('buyerAddress', country);
+        var currencyField = document.getElementById('id_currency');
+        if (currencyField && country) currencyField.value = 'AED';
+    })();
+
+    function countryFromPhone(phone) {
+        if (!phone) return '';
+        var cleaned = phone.replace(/[^0-9+]/g, '');
+        // Simple prefix map; expand as needed
+        var prefixes = [
+            { code: '971', country: 'United Arab Emirates' },
+            { code: '968', country: 'Oman' },
+            { code: '966', country: 'Saudi Arabia' },
+            { code: '974', country: 'Qatar' },
+            { code: '973', country: 'Bahrain' },
+            { code: '965', country: 'Kuwait' },
+            { code: '92', country: 'Pakistan' },
+            { code: '91', country: 'India' },
+            { code: '880', country: 'Bangladesh' },
+            { code: '94', country: 'Sri Lanka' },
+            { code: '977', country: 'Nepal' },
+            { code: '60', country: 'Malaysia' },
+            { code: '65', country: 'Singapore' },
+            { code: '66', country: 'Thailand' },
+            { code: '63', country: 'Philippines' },
+            { code: '86', country: 'China' },
+            { code: '852', country: 'Hong Kong' },
+            { code: '853', country: 'Macau' },
+            { code: '81', country: 'Japan' },
+            { code: '82', country: 'South Korea' },
+            { code: '90', country: 'Turkey' },
+            { code: '1', country: 'United States / Canada' },
+            { code: '44', country: 'United Kingdom' },
+            { code: '49', country: 'Germany' },
+            { code: '33', country: 'France' },
+            { code: '39', country: 'Italy' },
+            { code: '34', country: 'Spain' },
+        ];
+        for (var i = 0; i < prefixes.length; i++) {
+            var c = prefixes[i].code;
+            if (
+                cleaned.startsWith('+' + c) ||
+                cleaned.startsWith(c) ||
+                cleaned.startsWith('00' + c)
+            ) {
+                return prefixes[i].country;
+            }
+        }
+        return '';
+    }
+
+    function currentVatRate() {
+        var vatInput = document.getElementById('vatRateInput');
+        var val = parseFloat((vatInput && vatInput.value) ? vatInput.value : '5');
+        if (isNaN(val) || val < 0) val = 0;
+        return val;
+    }
+
+    function vatRateForRow(row) {
+        var perRow = row ? row.querySelector('.invoice-line-vat-rate-input') : null;
+        if (perRow) {
+            var val = parseFloat((perRow.value || '').toString().replace(',', '.'));
+            if (!isNaN(val) && val >= 0) return val;
+        }
+        return currentVatRate();
+    }
+
+    function recalcRow(row) {
+        var qtyInput = row.querySelector('input[name$="-quantity"]');
+        var priceInput = row.querySelector('input[name$="-unit_price"]');
+        var discInput = row.querySelector('input[name$="-discount_percent"]');
+        var rateGrossEl = row.querySelector('.rate-print');
+        var amountEl = row.querySelector('.amount-print');
+        var vatRateInput = row.querySelector('.invoice-line-vat-rate-input');
+        var vatEl = row.querySelector('.vat-print');
+        var totalEl = row.querySelector('.total-print');
+
+        if (!qtyInput || !priceInput || !discInput || !amountEl) return;
+
+        var qty = parseFloat(qtyInput.value.replace(',', '.')) || 0;
+        var price = parseFloat(priceInput.value.replace(',', '.')) || 0;
+        var disc = parseFloat(discInput.value.replace(',', '.')) || 0;
+
+        if (disc < 0) disc = 0;
+        if (disc > 100) disc = 100;
+
+        var net = qty * price * (1 - disc / 100);
+
+        var vatRate = vatRateForRow(row);
+
+        // Per-unit rate including VAT (after discount)
+        if (rateGrossEl) {
+            var grossUnit = price * (1 - disc / 100) * (1 + vatRate / 100);
+            rateGrossEl.textContent = grossUnit ? grossUnit.toFixed(2) : '0.00';
+        }
+
+        if (vatRateInput) {
+            // Keep input in a clean numeric state
+            var sanitizedVat = parseFloat((vatRateInput.value || '').toString().replace(',', '.'));
+            if (isNaN(sanitizedVat) || sanitizedVat < 0) {
+                vatRateInput.value = vatRate.toFixed(2);
+            }
+        }
+
+        amountEl.textContent = net ? net.toFixed(2) : '0.00';
+
+        if (vatEl) {
+            var vat = net * (vatRate / 100);
+            vatEl.textContent = vat ? vat.toFixed(2) : '0.00';
+        }
+        if (totalEl) {
+            var total = net + (net * (vatRate / 100));
+            totalEl.textContent = total ? total.toFixed(2) : '0.00';
+        }
+    }
+
+    function recalcAll() {
+        var subtotal = 0;
+        var vatTotal = 0;
+        var total = 0;
+        console.log('recalcAll called, itemRows:', itemRows.length);
+        itemRows.forEach(function(row) {
+            recalcRow(row);
+            var amountEl = row.querySelector('.amount-print');
+            if (amountEl) {
+                var val = parseFloat(amountEl.textContent.replace(',', '.')) || 0;
+                subtotal += val;
+                console.log('Amount found:', val, 'Subtotal:', subtotal);
+            }
+            var vatEl = row.querySelector('.vat-print');
+            if (vatEl) {
+                var v = parseFloat(vatEl.textContent.replace(',', '.')) || 0;
+                vatTotal += v;
+                console.log('VAT found:', v, 'VAT Total:', vatTotal);
+            }
+            var totalEl = row.querySelector('.total-print');
+            if (totalEl) {
+                var t = parseFloat(totalEl.textContent.replace(',', '.')) || 0;
+                total += t;
+                console.log('Total found:', t, 'Grand Total:', total);
+            }
+        });
+        var totalEl = document.getElementById('invoice-total-preview');
+        if (totalEl) {
+            totalEl.textContent = total ? total.toFixed(2) : '0.00';
+            console.log('Set total preview to:', totalEl.textContent);
+            console.log('Total element found:', totalEl, 'Position:', totalEl.getBoundingClientRect());
+        } else {
+            console.log('Total element NOT found!');
+        }
+        var subtotalEl = document.getElementById('invoice-subtotal-preview');
+        if (subtotalEl) {
+            subtotalEl.textContent = subtotal ? subtotal.toFixed(2) : '0.00';
+            console.log('Set subtotal preview to:', subtotalEl.textContent);
+            console.log('Subtotal element found:', subtotalEl, 'Position:', subtotalEl.getBoundingClientRect());
+        } else {
+            console.log('Subtotal element NOT found!');
+        }
+        var vatPreviewEl = document.getElementById('invoice-vat-preview');
+        if (vatPreviewEl) {
+            vatPreviewEl.textContent = vatTotal ? vatTotal.toFixed(2) : '0.00';
+            console.log('Set VAT preview to:', vatPreviewEl.textContent);
+            console.log('VAT element found:', vatPreviewEl, 'Position:', vatPreviewEl.getBoundingClientRect());
+        } else {
+            console.log('VAT element NOT found!');
+        }
+
+        var wordsEl = document.getElementById('invoice-amount-words');
+        if (wordsEl) {
+            try {
+                wordsEl.textContent = amountToWords(total);
+            } catch (e) {
+                wordsEl.textContent = '-';
+            }
+        }
+        var vatWordsEl = document.getElementById('invoice-vat-words');
+        if (vatWordsEl) {
+            try {
+                vatWordsEl.textContent = amountToWords(vatTotal);
+            } catch (e) {
+                vatWordsEl.textContent = '-';
+            }
+        }
+    }
+
+    // Attach listeners to update amount when quantity, rate, or discount changes
+    itemRows.forEach(function(row) { attachRowListeners(row); attachDeleteListener(row); });
+
+    recalcAll();
+    updateDeleteButtons();
+
+    var vatInput = document.getElementById('vatRateInput');
+    if (vatInput) {
+        vatInput.addEventListener('input', function() {
+            // When global VAT changes, propagate to all visible row VAT inputs (acts as a default)
+            var next = currentVatRate();
+            itemRows.forEach(function(row) {
+                if (row.style.display === 'none') return;
+                var perRow = row.querySelector('.invoice-line-vat-rate-input');
+                if (perRow) {
+                    perRow.value = next.toFixed(2);
+                }
+            });
+            recalcAll();
+        });
+    }
+
+    // Per-row VAT change
+    itemRows.forEach(function(row) {
+        var perRow = row.querySelector('.invoice-line-vat-rate-input');
+        if (perRow) {
+            perRow.addEventListener('input', function() { recalcAll(); });
+        }
+    });
+
+    if (leadSelect) {
+        leadSelect.addEventListener('change', function() {
+            if (this.value) {
+                loadItemsForLead(this.value);
+            }
+            updatePiForSelectedLead();
+            updateCountryFromLead();
+        });
+    }
+
+    function updatePiForSelectedLead() {
+        var piInput = document.getElementById('piNumber');
+        if (!piInput) return;
+        if ((piInput.value || '').toString().trim()) {
+            return;
+        }
+        if (!leadSelect) {
+            piInput.value = '';
+            return;
+        }
+        var opt = leadSelect.options[leadSelect.selectedIndex];
+        piInput.value = (opt && opt.dataset && opt.dataset.piNumber) ? opt.dataset.piNumber : '';
+    }
+
+    function updateCountryFromLead() {
+        if (!leadSelect) return;
+        var opt = leadSelect.options[leadSelect.selectedIndex];
+        var country = (opt && opt.dataset && opt.dataset.country) ? opt.dataset.country : '';
+        var phone = (opt && opt.dataset && opt.dataset.phone) ? opt.dataset.phone : '';
+        var countryInput = document.getElementById('buyerCountry');
+        var addrSpan = document.getElementById('buyerAddress');
+        var phoneSpan = document.getElementById('buyerPhone');
+
+        // Prefer explicit country from enquiry; fallback to phone-derived
+        var derived = country || countryFromPhone(phone);
+        if (phoneSpan && phone) phoneSpan.textContent = phone;
+        if (countryInput && derived) countryInput.value = derived;
+        if (addrSpan && derived) addrSpan.textContent = derived;
+    }
+
+    function loadLeadsForContact(contactId) {
+        if (!leadSelect) return;
+
+        // Clear existing options
+        leadSelect.innerHTML = '';
+        var emptyOpt = document.createElement('option');
+        emptyOpt.value = '';
+        // Keep placeholder visually empty instead of showing '---------' text
+        emptyOpt.textContent = '';
+        leadSelect.appendChild(emptyOpt);
+
+        fetch('/invoices/api/contact/' + contactId + '/leads/')
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                data.forEach(function(item) {
+                    var opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = item.label;
+                    opt.dataset.piNumber = item.pi_number || '';
+                    opt.dataset.country = item.country || '';
+                    opt.dataset.phone = item.phone || '';
+                    leadSelect.appendChild(opt);
+                });
+
+                if (initialLeadId) {
+                    leadSelect.value = initialLeadId;
+                    if (leadSelect.value) {
+                        loadItemsForLead(initialLeadId);
+                    }
+                    initialLeadId = '';
+                }
+
+                updatePiForSelectedLead();
+                updateCountryFromLead();
+            })
+            .catch(function(error) {
+                console.error('Error loading enquiries for contact', contactId, error);
+            });
+    }
+
+    function loadItemsForLead(leadId) {
+        var rows = document.querySelectorAll('#invoice-items-table tbody tr');
+        if (!rows.length) return;
+
+        fetch('/invoices/api/lead/' + leadId + '/items/')
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                var max = rows.length;
+                for (var i = 0; i < max; i++) {
+                    var row = rows[i];
+                    var descInput = row.querySelector('input[name$="-description"]');
+                    var qtyInput = row.querySelector('input[name$="-quantity"]');
+                    var priceInput = row.querySelector('input[name$="-unit_price"]');
+                    var discInput = row.querySelector('input[name$="-discount_percent"]');
+
+                    var item = data[i];
+                    if (item && descInput && qtyInput && priceInput && discInput) {
+                        // Show row and populate with item data; mark to persist visibility
+                        row.style.display = '';
+                        row.classList.remove('invoice-row-hidden');
+                        row.dataset.persistVisible = '1';
+                        descInput.value = item.description || '';
+                        qtyInput.value = item.quantity || '';
+                        priceInput.value = item.unit_price || '';
+                        discInput.value = item.discount_percent || '';
+                        recalcRow(row);
+                    } else {
+                        // Clear and hide extra rows (except always keep first two)
+                        if (descInput) descInput.value = '';
+                        if (qtyInput) qtyInput.value = '';
+                        if (priceInput) priceInput.value = '';
+                        if (discInput) discInput.value = '';
+                        if (i < 2) {
+                            row.style.display = '';
+                            row.classList.remove('invoice-row-hidden');
+                        } else {
+                            row.style.display = 'none';
+                            row.classList.add('invoice-row-hidden');
+                            row.removeAttribute('data-persist-visible');
+                        }
+                        recalcRow(row);
+                    }
+                }
+                renumberVisibleRows();
+                recalcAll();
+            })
+            .catch(function(error) {
+                console.error('Error loading items for lead', leadId, error);
+            });
+    }
+
+    var form = document.getElementById('invoice-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!confirm('Are you sure you want to save this invoice?')) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    // Add row button: reveal next hidden row or clone a new one
+    var addRowBtn = document.getElementById('add-invoice-row');
+    if (addRowBtn) {
+        addRowBtn.addEventListener('click', function() {
+            var hiddenRow = Array.prototype.find.call(itemRows, function(r) {
+                return r.classList.contains('invoice-row-hidden') || r.style.display === 'none';
+            });
+            if (hiddenRow) {
+                hiddenRow.style.display = '';
+                hiddenRow.classList.remove('invoice-row-hidden');
+                hiddenRow.dataset.persistVisible = '1';
+                renumberVisibleRows();
+                recalcAll();
+                var desc = hiddenRow.querySelector('input[name$="-description"]');
+                if (desc) desc.focus();
+                return;
+            }
+
+            // If no hidden rows remain, clone a fresh row and bump TOTAL_FORMS
+            var totalInput = document.querySelector('input[name$="-TOTAL_FORMS"]');
+            if (!totalInput) return;
+            var newIndex = parseInt(totalInput.value || '0', 10);
+            var templateRow = itemRows[0];
+            if (!templateRow) return;
+
+            var clone = templateRow.cloneNode(true);
+            // update names/ids
+            var allInputs = clone.querySelectorAll('input, select, textarea');
+            allInputs.forEach(function(inp) {
+                if (inp.name) {
+                    var name = inp.name.replace(/-\d+-/, '-' + newIndex + '-');
+                    inp.name = name;
+                }
+                if (inp.id) {
+                    inp.id = inp.id.replace(/-\d+-/, '-' + newIndex + '-');
+                }
+                if (inp.type === 'checkbox' || inp.type === 'radio') {
+                    inp.checked = false;
+                } else {
+                    inp.value = '';
+                }
+                // ensure DELETE checkboxes removed for new rows
+                if (inp.name && inp.name.endsWith('-DELETE')) {
+                    var checkWrap = inp.closest('.form-check');
+                    if (checkWrap) checkWrap.remove();
+                }
+            });
+
+            // reset computed spans
+            var amt = clone.querySelector('.invoice-line-amount');
+            var vat = clone.querySelector('.invoice-line-vat');
+            var total = clone.querySelector('.invoice-line-total');
+            if (amt) amt.textContent = '0.00';
+            if (vat) vat.textContent = '0.00';
+            if (total) total.textContent = '0.00';
+
+            clone.style.display = '';
+            clone.classList.remove('invoice-row-hidden');
+            clone.dataset.persistVisible = '1';
+
+            // Remove any hidden pk/id fields
+            var hiddenId = clone.querySelector('input[name$="-id"]');
+            if (hiddenId) hiddenId.value = '';
+
+            // Append and update trackers
+            var tbody = document.querySelector('#invoice-items-table tbody');
+            if (tbody) {
+                tbody.appendChild(clone);
+                itemRows.push(clone);
+            }
+
+            // bump management form count
+            totalInput.value = newIndex + 1;
+
+            attachRowListeners(clone);
+            attachDeleteListener(clone);
+            renumberVisibleRows();
+            recalcAll();
+            var desc = clone.querySelector('input[name$="-description"]');
+            if (desc) desc.focus();
+        });
+    }
+
+    function amountToWords(amount) {
+        if (amount === null || amount === undefined) return '-';
+        var n = parseFloat(amount);
+        if (isNaN(n)) return '-';
+
+        var currency = document.getElementById('id_currency');
+        var currencyCode = currency ? (currency.value || 'AED') : 'AED';
+
+        var sign = '';
+        if (n < 0) {
+            sign = 'Minus ';
+            n = Math.abs(n);
+        }
+
+        var whole = Math.floor(n);
+        var frac = Math.round((n - whole) * 100);
+
+        var words = sign + numberToWords(whole) + ' ' + currencyCode;
+        if (frac > 0) {
+            words += ' and ' + numberToWords(frac) + ' Fils';
+        }
+        words += ' Only';
+        return words;
+    }
+
+    function numberToWords(num) {
+        if (num === 0) return 'Zero';
+
+        var below20 = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+        var tens = ['','', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+
+        function chunkToWords(n) {
+            var str = '';
+            if (n >= 100) {
+                str += below20[Math.floor(n / 100)] + ' Hundred';
+                n = n % 100;
+                if (n) str += ' ';
+            }
+            if (n >= 20) {
+                str += tens[Math.floor(n / 10)];
+                n = n % 10;
+                if (n) str += ' ' + below20[n];
+            } else if (n > 0) {
+                str += below20[n];
+            }
+            return str;
+        }
+
+        var parts = [];
+        var billions = Math.floor(num / 1000000000);
+        if (billions) {
+            parts.push(chunkToWords(billions) + ' Billion');
+            num = num % 1000000000;
+        }
+        var millions = Math.floor(num / 1000000);
+        if (millions) {
+            parts.push(chunkToWords(millions) + ' Million');
+            num = num % 1000000;
+        }
+        var thousands = Math.floor(num / 1000);
+        if (thousands) {
+            parts.push(chunkToWords(thousands) + ' Thousand');
+            num = num % 1000;
+        }
+        if (num) {
+            parts.push(chunkToWords(num));
+        }
+        return parts.join(' ');
+    }
+});
+</script>
+{% endblock %}
+
+

@@ -1,0 +1,42 @@
+{% extends "notifications_app/emails/base_email.html" %}
+
+{% block title %}Daily CRM Summary - AAA CRM{% endblock %}
+
+{% block header_subtitle %}Daily Summary{% endblock %}
+
+{% block content %}
+<div class="priority-low">
+    <h2>📊 Your Daily CRM Summary</h2>
+    <p>Hello {{ recipient.get_full_name|default:recipient.username }},</p>
+    
+    <p>Here's your daily summary for {{ data.date|date:"F d, Y" }}:</p>
+    
+    <div class="details">
+        {% if data.leads_created > 0 %}
+        <p>🎯 <strong>{{ data.leads_created }}</strong> new enquir{{ data.leads_created|pluralize:"y,ies" }} created</p>
+        {% endif %}
+        
+        {% if data.followups_due > 0 %}
+        <p>📅 <strong>{{ data.followups_due }}</strong> follow-up{{ data.followups_due|pluralize }} due today</p>
+        {% endif %}
+        
+        {% if data.overdue_followups > 0 %}
+        <p>🚨 <strong>{{ data.overdue_followups }}</strong> overdue follow-up{{ data.overdue_followups|pluralize }}</p>
+        {% endif %}
+    </div>
+    
+    {% if data.followups_due > 0 or data.overdue_followups > 0 %}
+    <p><strong>Action Required:</strong> Please review your follow-ups and update their status.</p>
+    {% endif %}
+    
+    <p>Have a productive day!</p>
+</div>
+{% endblock %}
+
+{% block action_buttons %}
+<div style="text-align: center; margin: 20px 0;">
+    <a href="{{ request.build_absolute_uri }}/dashboard/" class="button">
+        View Dashboard
+    </a>
+</div>
+{% endblock %}

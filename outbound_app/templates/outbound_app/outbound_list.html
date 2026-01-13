@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Outbound Activities - CRM System{% endblock %}
+{% block page_title %}Outbound Activities{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{% url 'outbound_app:outbound_add' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add New Activity
+    </a>
+    {% if user.is_superuser %}
+    <a href="{% url 'outbound_app:outbound_dashboard' %}" class="btn btn-outline-info">
+        <i class="bi bi-graph-up"></i> Dashboard
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Search -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-8">
+                <label for="search" class="form-label">Search Activities</label>
+                <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Customer name, phone, summary...">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                <a href="{% url 'outbound_app:outbound_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Activities List -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-list"></i> Recent Activities
+            {% if page_obj.paginator.count %}
+                <span class="badge bg-secondary">{{ page_obj.paginator.count }}</span>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Method</th>
+                            <th>Next Step</th>
+                            <th>Salesperson</th>
+                            <th>Date</th>
+                            <th>Convert to Enquiry</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for activity in page_obj %}
+                        <tr>
+                            <td>
+                                {% if activity.contact and activity.contact.phone_number %}
+                                    <a href="{% url 'outbound_app:customer_outbound' activity.contact.phone_number %}" class="text-decoration-none">
+                                        <strong>{{ activity.contact.full_name }}</strong>
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">{{ activity.contact.phone_number }}</small>
+                                {% else %}
+                                    <strong>{{ activity.contact.full_name|default:'Unknown' }}</strong>
+                                    <br>
+                                    <small class="text-muted">No phone</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if activity.method == 'PHONE' %}
+                                    <span class="badge bg-primary"><i class="bi bi-whatsapp"></i> Phone</span>
+                                {% elif activity.method == 'WHATSAPP' %}
+                                    <span class="badge bg-success"><i class="bi bi-whatsapp"></i> WhatsApp</span>
+                                {% elif activity.method == 'EMAIL' %}
+                                    <span class="badge bg-info"><i class="bi bi-envelope"></i> Email</span>
+                                {% elif activity.method == 'MEETING' %}
+                                    <span class="badge bg-warning"><i class="bi bi-calendar"></i> Meeting</span>
+                                {% elif activity.method == 'SMS' %}
+                                    <span class="badge bg-secondary"><i class="bi bi-chat-dots"></i> SMS</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ activity.get_method_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if activity.next_step_date %}
+                                    <small class="text-muted">{{ activity.get_next_step_display }}</small><br>
+                                    <small class="text-warning">{{ activity.next_step_date|date:'M d, Y' }}</small>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if activity.created_by %}
+                                    <small>{{ activity.created_by.get_full_name|default:activity.created_by.username }}</small>
+                                {% else %}
+                                    <small class="text-muted">System</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ activity.created_at|timesince }} ago</small>
+                            </td>
+                            <td class="text-center">
+                                {% if activity.lead %}
+                                    <a href="{% url 'crm_app:lead_detail' activity.lead.pk %}" class="btn btn-sm btn-outline-success" title="Already converted to Enquiry #{{ activity.lead.pk }}">
+                                        <i class="bi bi-check-circle"></i> Enquiry #{{ activity.lead.pk }}
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'outbound_app:outbound_convert_to_enquiry' activity.id %}" class="btn btn-sm btn-success" title="Convert to Enquiry">
+                                        <i class="bi bi-arrow-right-circle"></i> Convert
+                                    </a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'outbound_app:outbound_detail' activity.id %}" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'outbound_app:outbound_edit' activity.id %}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                                No outbound activities found.
+                                <br>
+                                <a href="{% url 'outbound_app:outbound_add' %}" class="btn btn-primary mt-2">
+                                    <i class="bi bi-plus-circle"></i> Add First Activity
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Activities pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                No outbound activities found.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

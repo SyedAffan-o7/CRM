@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Products Management - AAA CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-boxes me-2"></i>Products Management</h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'crm_app:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Products</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-tags fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="card-title">Categories</h5>
+                    <p class="card-text">Manage product categories for better organization and lead tracking.</p>
+                    <a href="{% url 'products:category-list' %}" class="btn btn-primary">
+                        <i class="fas fa-eye me-1"></i>View Categories
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-sitemap fa-3x text-success"></i>
+                    </div>
+                    <h5 class="card-title">Subcategories</h5>
+                    <p class="card-text">Organize products into detailed subcategories for precise lead classification.</p>
+                    <a href="{% url 'products:subcategory-list' %}" class="btn btn-success">
+                        <i class="fas fa-eye me-1"></i>View Subcategories
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-box fa-3x text-info"></i>
+                    </div>
+                    <h5 class="card-title">Products</h5>
+                    <p class="card-text">Complete product catalog for comprehensive enquiry management.</p>
+                    <a href="{% url 'products:product-list' %}" class="btn btn-info">
+                        <i class="fas fa-eye me-1"></i>View Products
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import CSV Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-file-csv fa-3x text-info"></i>
+                    </div>
+                    <h5 class="card-title">Import CSV</h5>
+                    <a href="{% url 'products:products-import-csv' %}" class="btn btn-outline-info">
+                        <i class="fas fa-upload me-1"></i>Import
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Products Overview</h5>
+                </div>
+                    <p>The Products Management system helps organize your CRM data by:</p>
+                    <ul>
+                        <li><strong><i class="fas fa-tags me-2 text-primary"></i>Categories:</strong> Main product groups (e.g., Safety Equipment, Industrial Tools)</li>
+                        <li><strong><i class="fas fa-sitemap me-2 text-success"></i>Subcategories:</strong> Detailed product classifications within categories</li>
+                        <li><strong><i class="fas fa-box me-2 text-info"></i>Products:</strong> Individual items that customers enquire about</li>
+                    </ul>
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Tip:</strong> Properly organized categories and subcategories improve lead tracking and reporting accuracy.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

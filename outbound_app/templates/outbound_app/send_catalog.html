@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Send Catalog - {{ contact.full_name }}{% endblock %}
+{% block page_title %}Send Catalog to {{ contact.full_name }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'outbound_app:customer_outbound' contact.id %}" class="btn btn-secondary">
+    <i class="bi bi-arrow-left"></i> Back to Customer
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-file-earmark-pdf"></i> Send Catalog
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Customer Info -->
+                <div class="alert alert-info">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Customer:</strong> {{ contact.full_name }}<br>
+                            <strong>Phone:</strong> {{ contact.phone_number }}
+                        </div>
+                        <div class="col-md-6">
+                            {% if contact.email %}
+                                <strong>Email:</strong> {{ contact.email }}<br>
+                            {% endif %}
+                            {% if contact.company %}
+                                <strong>Company:</strong> {{ contact.company.company_name }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Catalog Type -->
+                    <div class="mb-3">
+                        <label for="catalog_type" class="form-label">Catalog Type</label>
+                        <select class="form-select" id="catalog_type" name="catalog_type" required>
+                            <option value="">Select catalog type...</option>
+                            {% for value, label in catalog_types %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Sending Method -->
+                    <div class="mb-3">
+                        <label for="method" class="form-label">Sending Method</label>
+                        <select class="form-select" id="method" name="method" required>
+                            <option value="whatsapp">
+                                <i class="bi bi-whatsapp"></i> WhatsApp
+                            </option>
+                            <option value="email">
+                                <i class="bi bi-envelope"></i> Email
+                            </option>
+                            <option value="call">
+                                <i class="bi bi-whatsapp"></i> Phone Call (Mention catalog)
+                            </option>
+                        </select>
+                    </div>
+                    
+                    <!-- Message Template -->
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Message</label>
+                        <textarea class="form-control" id="message" name="message" rows="4" placeholder="Enter your message...">Hi {{ contact.full_name }},
+
+Hope you're doing well! 
+
+I wanted to share our latest catalog with you, featuring our newest safety equipment and special offers. 
+
+Please let me know if you have any questions or if you'd like to discuss any specific requirements.
+
+Best regards,
+{{ user.get_full_name|default:user.username }}</textarea>
+                    </div>
+                    
+                    <!-- Template Suggestions -->
+                    <div class="mb-3">
+                        <label class="form-label">Quick Templates</label>
+                        <div class="btn-group-vertical d-grid gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm template-btn" 
+                                    data-template="new_arrivals">
+                                New Arrivals Template
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm template-btn" 
+                                    data-template="seasonal_offer">
+                                Seasonal Offer Template
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm template-btn" 
+                                    data-template="follow_up">
+                                Follow-up Template
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Send Catalog
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Templates for JavaScript -->
+<script id="template-new-arrivals" type="text/template">
+Hi {{ contact.full_name }},
+
+Exciting news! We've just received our latest shipment of safety equipment with some amazing new products.
+
+I'm sharing our New Arrivals catalog with you - I think you'll find some great additions for your safety requirements.
+
+Would love to hear your thoughts and discuss how these new products might benefit your operations.
+
+Best regards,
+{{ user.get_full_name|default:user.username }}
+</script>
+
+<script id="template-seasonal-offer" type="text/template">
+Hi {{ contact.full_name }},
+
+Hope you're having a great day!
+
+We're running some special seasonal offers on our safety equipment range. I've attached our latest catalog with highlighted deals that might interest you.
+
+These offers are valid for a limited time, so please let me know if you'd like to take advantage of any of these deals.
+
+Looking forward to hearing from you!
+
+Best regards,
+{{ user.get_full_name|default:user.username }}
+</script>
+
+<script id="template-follow-up" type="text/template">
+Hi {{ contact.full_name }},
+
+Following up on our previous conversation, I wanted to share our complete product catalog with you.
+
+Please take a look and let me know if any of our safety equipment solutions align with your current needs.
+
+I'm here to answer any questions and provide detailed information about any products that interest you.
+
+Best regards,
+{{ user.get_full_name|default:user.username }}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Template button functionality
+    const templateButtons = document.querySelectorAll('.template-btn');
+    const messageTextarea = document.getElementById('message');
+    
+    templateButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const templateType = this.dataset.template;
+            const templateScript = document.getElementById(`template-${templateType.replace('_', '-')}`);
+            
+            if (templateScript) {
+                messageTextarea.value = templateScript.textContent.trim();
+            }
+        });
+    });
+    
+    // Update message based on method selection
+    const methodSelect = document.getElementById('method');
+    methodSelect.addEventListener('change', function() {
+        const method = this.value;
+        let currentMessage = messageTextarea.value;
+        
+        // Add method-specific context if message is default
+        if (method === 'email' && !currentMessage.includes('attached')) {
+            currentMessage = currentMessage.replace('sharing our latest catalog', 'attaching our latest catalog');
+        } else if (method === 'call' && !currentMessage.includes('mentioned')) {
+            currentMessage = currentMessage.replace('sharing our latest catalog', 'mentioned our latest catalog during our call');
+        }
+        
+        messageTextarea.value = currentMessage;
+    });
+});
+</script>
+{% endblock %}

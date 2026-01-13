@@ -1,0 +1,1102 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ title }} - CRM System{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'crm_app:lead_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Back to Enquiries
+</a>
+<a href="{% url 'crm_app:lead_edit' lead.pk %}" class="btn btn-primary ms-2">
+    <i class="bi bi-pencil"></i> Edit Enquiry
+</a>
+<button type="button" class="btn btn-success ms-2" data-bs-toggle="modal" data-bs-target="#whatsappSendModal">
+    <i class="bi bi-send"></i> Send via WhatsApp
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Global function definitions for onclick handlers -->
+<script>
+// Image modal function (must be inside a rendered block)
+window.openImageModal = function(imageUrl) {
+    try {
+        const modalImage = document.getElementById('modalImage');
+        if (modalImage) {
+            modalImage.src = imageUrl;
+            const modalEl = document.getElementById('imageModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        }
+    } catch (e) { console.error('openImageModal error:', e); }
+};
+
+// Handle Google Drive image loading errors
+window.handleImageError = function(img) {
+    console.error('Google Drive image failed to load:', img.src);
+
+    // Try thumbnail URL as fallback for direct URLs
+    const currentSrc = img.src;
+    if (currentSrc.includes('drive.google.com/uc?')) {
+        // Extract file ID from uc URL
+        const idMatch = currentSrc.match(/id=([^&]+)/);
+        if (idMatch) {
+            const fileId = idMatch[1];
+            const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+            console.log('Retrying with thumbnail URL:', thumbnailUrl);
+            img.src = thumbnailUrl;
+            img.onerror = function() {
+                // If thumbnail also fails, show error
+                showFinalError(img, currentSrc);
+            };
+            return;
+        }
+    }
+
+    // If already a thumbnail URL or no file ID found, show error
+    showFinalError(img, currentSrc);
+};
+
+// Show final error message when all attempts fail
+function showFinalError(img, originalSrc) {
+    console.error('All Google Drive image fallback attempts failed for:', originalSrc);
+
+    // Hide the loading spinner if visible
+    const spinner = img.parentNode.querySelector('.image-loading-spinner');
+    if (spinner) {
+        spinner.classList.add('d-none');
+    }
+
+    // Create a more informative error display
+    const container = img.parentNode;
+    const fileId = originalSrc.includes('id=') ? originalSrc.split('id=')[1].split('&')[0] : 'unknown';
+    const originalUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'alert alert-danger d-flex align-items-center justify-content-center p-4';
+    errorDiv.style.minHeight = '300px';
+    errorDiv.innerHTML = `
+        <div class="text-center">
+            <i class="bi bi-exclamation-triangle display-4 text-warning mb-3"></i>
+            <h5 class="mb-2"><strong>Image Unavailable</strong></h5>
+            <p class="mb-3">This Google Drive image cannot be displayed.</p>
+            <a href="${originalUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-google"></i> Open in Google Drive
+            </a>
+            <p class="small text-muted mt-3 mb-0">
+                <em>Possible causes: File not shared publicly, permissions changed, or file deleted.</em>
+            </p>
+        </div>
+    `;
+
+    // Replace the image with the error message
+    container.replaceChild(errorDiv, img);
+};
+
+// Show loading spinner when Google Drive images start loading
+document.addEventListener('DOMContentLoaded', function() {
+    const googleDriveImages = document.querySelectorAll('.google-drive-image');
+    googleDriveImages.forEach(img => {
+        const spinner = img.parentNode.querySelector('.image-loading-spinner');
+        if (spinner) {
+            spinner.classList.remove('d-none');
+            img.addEventListener('load', function() {
+                spinner.classList.add('d-none');
+            });
+        }
+    });
+});
+
+// Product modal function
+window.showProductModal = function(leadId) {
+    console.log('showProductModal called with lead ID:', leadId);
+
+    // Get modal elements
+    const modalEl = document.getElementById('productModal');
+    if (!modalEl) {
+        console.error('Product modal element not found');
+        return;
+    }
+
+    const body = document.getElementById('productModalBody');
+    if (!body) {
+        console.error('Product modal body not found');
+        return;
+    }
+
+    // Create Bootstrap modal instance
+    const modal = new bootstrap.Modal(modalEl);
+
+    body.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading product details...</p></div>';
+    modal.show();
+
+    fetch('/enquiries/' + leadId + '/products/')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            let html = '';
+            if (data.lead_products && data.lead_products.length) {
+                html += '<div class="row">';
+                data.lead_products.forEach(p => {
+                    const img = p.image ? '<img src="' + p.image + '" class="card-img-top" style="height:160px;object-fit:cover;">' :
+                                        '<div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:160px;"><span class="text-muted">No image</span></div>';
+                    const categoryText = p.category || 'No category';
+                    const subcategoryBadge = p.subcategory ? ' <span class="badge bg-light text-dark ms-1">' + p.subcategory + '</span>' : '';
+                    const qtyText = p.quantity !== null && p.quantity !== undefined ? p.quantity : '-';
+                    const priceText = p.price !== null && p.price !== undefined ? p.price : '-';
+                    html += '<div class="col-md-6 mb-4"><div class="card h-100">' + img + '<div class="card-body"><h6 class="card-title">' + categoryText + subcategoryBadge + '</h6><div class="d-flex justify-content-between align-items-center"><small class="text-muted">Qty: ' + qtyText + '</small><small class="text-muted">' + priceText + '</small></div></div></div></div>';
+                });
+                html += '</div>';
+            }
+            if (!html) html = '<p class="text-muted">No products found.</p>';
+            body.innerHTML = html;
+        })
+        .catch(err => {
+            console.error('Error fetching product data:', err);
+            body.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Error loading product details: ' + err.message + '</div>';
+        });
+};
+</script>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Enquiry Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Contact Name</h6>
+                        <p class="mb-3">{{ lead.contact_name }}</p>
+                        <h6 class="text-muted">Phone Number</h6>
+                        <p class="mb-3">
+                            <a
+                                href="https://wa.me/{{ lead.phone_number|cut:' '|cut:'+'|cut:'-'|cut:'('|cut:')'|cut:'.'|cut:'/' }}"
+                                class="me-2 text-success"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Open WhatsApp chat"
+                                aria-label="Open WhatsApp chat"
+                            >
+                                <i class="bi bi-whatsapp"></i>
+                            </a>
+                            {{ lead.phone_number }}
+                        </p>
+                        <h6 class="text-muted">Lead Source</h6>
+                        <p class="mb-3">{{ lead.get_lead_source_display }}</p>
+                        <h6 class="text-muted">Status</h6>
+                        <div class="mb-3">
+                            <select class="form-select form-select-sm status-select" data-lead-id="{{ lead.pk }}" data-current-status="{{ lead.lead_status }}" style="max-width: 200px;">
+                                <option value="fulfilled" {% if lead.lead_status == 'fulfilled' %}selected{% endif %}>Fulfilled</option>
+                                <option value="not_fulfilled" {% if lead.lead_status == 'not_fulfilled' %}selected{% endif %}>Not Fulfilled</option>
+                            </select>
+                            {% if lead.lead_status == 'not_fulfilled' and lead.reason %}
+                                <small class="text-muted d-block mt-1">Reason: {{ lead.reason.name }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Company</h6>
+                        <p class="mb-3">{{ lead.company_name|default:"-" }}</p>
+                        <h6 class="text-muted">Enquiry Stage</h6>
+                        <div class="mb-3">
+                            <select class="form-select form-select-sm stage-select" data-lead-id="{{ lead.pk }}" data-current-stage="{{ lead.enquiry_stage }}" style="max-width: 250px;">
+                                <option value="enquiry_received" {% if lead.enquiry_stage == 'enquiry_received' %}selected{% endif %}>Enquiry Received</option>
+                                <option value="quotation_sent" {% if lead.enquiry_stage == 'quotation_sent' %}selected{% endif %}>Quotation Sent</option>
+                                <option value="negotiation" {% if lead.enquiry_stage == 'negotiation' %}selected{% endif %}>Negotiation</option>
+                                <option value="proforma_invoice_sent" {% if lead.enquiry_stage == 'proforma_invoice_sent' %}selected{% endif %}>Proforma Invoice Sent (PI Sent)</option>
+                                <option value="invoice_made" {% if lead.enquiry_stage == 'invoice_made' %}selected{% endif %}>Invoice Made</option>
+                                <option value="invoice_sent" {% if lead.enquiry_stage == 'invoice_sent' %}selected{% endif %}>Invoice Sent</option>
+                                <option value="won" {% if lead.enquiry_stage == 'won' %}selected{% endif %}>Won</option>
+                                <option value="lost" {% if lead.enquiry_stage == 'lost' %}selected{% endif %}>Lost</option>
+                            </select>
+                        </div>
+                        <h6 class="text-muted">Assigned Sales Person</h6>
+                        <div class="mb-3">
+                            <select class="form-select form-select-sm assign-select" data-lead-id="{{ lead.pk }}" data-current-assigned="{{ lead.assigned_sales_person.pk|default:'' }}" style="max-width: 200px;">
+                                <option value="">Unassigned</option>
+                                {% for user in sales_users %}
+                                    <option value="{{ user.pk }}" {% if lead.assigned_sales_person.pk == user.pk %}selected{% endif %}>{{ user.first_name|default:user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% if lead.proforma_invoice_number %}
+                        <h6 class="text-muted">Proforma Invoice Number</h6>
+                        <p class="mb-3">{{ lead.proforma_invoice_number }}</p>
+                        {% endif %}
+                        {% if lead.invoice_number %}
+                        <h6 class="text-muted">Invoice Number</h6>
+                        <p class="mb-3">{{ lead.invoice_number }}</p>
+                        {% endif %}
+                        {% if lead.next_action %}
+                        <h6 class="text-muted">Next Action</h6>
+                        <p class="mb-3">{{ lead.next_action }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if lead.notes %}
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted">Notes</h6>
+                        <p class="mb-0">{{ lead.notes|linebreaks }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Products Enquired Section - Full Width at Bottom -->
+                {% if current_products %}
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h6 class="text-muted mb-3">Products Enquired</h6>
+                        <div class="row g-3">
+                            {% for product in current_products %}
+                            <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="position-relative">
+                                        {% if product.image %}
+                                        <img src="{{ product.image.url }}" class="card-img-top rounded-top" style="height: 160px; object-fit: cover;" alt="{% if product.category %}{{ product.category.name }}{% else %}Product{% endif %}">
+                                        {% else %}
+                                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center rounded-top" style="height: 160px;">
+                                            <i class="bi bi-box-seam text-muted" style="font-size: 3rem;"></i>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <h6 class="card-title mb-2" style="font-size: 0.9rem;">
+                                            {% if product.category %}
+                                                {{ product.category.name }}
+                                                {% if product.subcategory %}
+                                                <br><small class="text-muted">{{ product.subcategory.name }}</small>
+                                                {% endif %}
+                                            {% elif product.product_name %}
+                                                {{ product.product_name }}
+                                            {% else %}
+                                                No Category
+                                            {% endif %}
+                                        </h6>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            {% if product.quantity %}
+                                            <small class="text-muted">Qty: {{ product.quantity }}</small>
+                                            {% endif %}
+                                            {% if product.price %}
+                                            <small class="text-muted">{{ product.price }}</small>
+                                            {% endif %}
+                                        </div>
+                                        {% if product.size or product.color or product.model or product.brand or product.ankle or product.material or product.people %}
+                                        <div class="mt-1">
+                                            <small class="text-muted d-block mb-1">Attributes</small>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% if product.size %}
+                                                <span class="badge bg-light text-dark border">Size: {{ product.size }}</span>
+                                                {% endif %}
+                                                {% if product.color %}
+                                                <span class="badge bg-light text-dark border">Color: {{ product.color }}</span>
+                                                {% endif %}
+                                                {% if product.model %}
+                                                <span class="badge bg-light text-dark border">Model: {{ product.model }}</span>
+                                                {% endif %}
+                                                {% if product.brand %}
+                                                <span class="badge bg-light text-dark border">Brand: {{ product.brand }}</span>
+                                                {% endif %}
+                                                {% if product.ankle %}
+                                                <span class="badge bg-light text-dark border">Ankle: {{ product.ankle }}</span>
+                                                {% endif %}
+                                                {% if product.material %}
+                                                <span class="badge bg-light text-dark border">Material: {{ product.material }}</span>
+                                                {% endif %}
+                                                {% if product.people %}
+                                                <span class="badge bg-light text-dark border">People: {{ product.people }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h6 class="text-muted mb-3">Products Enquired</h6>
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-box-seam" style="font-size: 3rem;"></i>
+                            <p class="mt-2 mb-0">No products have been added to this enquiry yet.</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if lead.images %}
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted">Attached Images</h6>
+                        <div class="mb-3">
+                            <img src="{{ lead.images.url }}" alt="Enquiry Image" class="img-fluid rounded border" style="max-width: 400px; max-height: 300px; cursor: pointer;" onclick="openImageModal('{{ lead.images.url }}')">
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if lead.image_url %}
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted">Google Drive Image</h6>
+                        <div class="mb-3">
+                            {% if processed_image_url %}
+                            <div class="position-relative">
+                                <img src="{{ processed_image_url }}" alt="Google Drive Image" class="img-fluid rounded border google-drive-image" style="max-width: 400px; max-height: 300px; cursor: pointer;" onclick="openImageModal('{{ processed_image_url }}')" onerror="handleImageError(this)">
+                                <div class="image-loading-spinner position-absolute top-50 start-50 translate-middle d-none">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i>
+                                    If image doesn't load, ensure the Google Drive file is shared publicly with "Anyone with the link can view"
+                                </small>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Invalid URL:</strong> {{ lead.image_url|truncatechars:50 }}
+                                <br><small>Please ensure it's a valid Google Drive sharing link.</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+            </div>
+            <div class="card-footer text-muted">
+                <small>Created: {{ lead.created_date|date:"F d, Y H:i" }} | Last Updated: {{ lead.updated_date|date:"F d, Y H:i" }}</small>
+            </div>
+        </div>
+        <!-- Follow-ups, Outbound, History, Activities sections (same as earlier) -->
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Follow-ups</h6>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#followupModal"><i class="bi bi-calendar-plus"></i> Add Follow-up</button>
+            </div>
+            <div class="card-body">
+                {% if follow_ups %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Date/Time</th><th>Type</th><th>Assigned</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody>
+                        {% for f in follow_ups %}
+                            <tr>
+                                <td>{{ f.scheduled_date|date:"M d, Y H:i" }}</td>
+                                <td>{{ f.get_followup_type_display|default:"-" }}</td>
+                                <td>{{ f.assigned_to.get_full_name|default:f.assigned_to.username|default:"-" }}</td>
+                                <td>{% if f.status == 'completed' %}<span class="badge bg-success">Completed</span>{% elif f.status == 'overdue' %}<span class="badge bg-danger">Overdue</span>{% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}</td>
+                                <td>{% if f.status != 'completed' %}<form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="update_followup_status" value="1"/><input type="hidden" name="followup_id" value="{{ f.id }}"/><input type="hidden" name="status" value="completed"/><button type="submit" class="btn btn-sm btn-outline-success">Mark Done</button></form>{% endif %}<a href="{% url 'crm_app:followup_edit' f.id %}" class="btn btn-sm btn-outline-secondary">Edit</a></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3"><i class="bi bi-calendar2-check" style="font-size: 2rem;"></i><p class="mt-2 mb-0">No follow-ups yet</p></div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Outbound Activities</h6>
+                <a href="{% url 'outbound_app:outbound_list' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right"></i> Open Outbound</a>
+            </div>
+            <div class="card-body">
+                {% if outbound_activities %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Contact</th><th>Method</th><th>Summary</th><th>Next Step</th><th>Time</th><th style="width:140px;">Actions</th></tr></thead>
+                        <tbody>
+                        {% for a in outbound_activities %}
+                            <tr>
+                                <td>{{ a.contact.full_name|default:'-' }}</td>
+                                <td>{{ a.get_method_display }}</td>
+                                <td>{{ a.summary|default:'-'|truncatechars:80 }}</td>
+                                <td>{{ a.get_next_step_display }}</td>
+                                <td>{{ a.created_at|date:'M d, Y h:i A' }}</td>
+                                <td><a href="{% url 'outbound_app:outbound_detail' pk=a.id %}" class="btn btn-sm btn-outline-primary">View</a> <a href="{% url 'outbound_app:outbound_edit' pk=a.id %}" class="btn btn-sm btn-outline-secondary">Edit</a></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3"><i class="bi bi-whatsapp" style="font-size: 2rem;"></i><p class="mt-2 mb-0">No outbound activities yet</p></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><h6 class="mb-0">Enquiry History</h6></div>
+            <div class="card-body">
+                {% if enquiry_history and enquiry_history.exists %}
+                <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Date</th><th>Stage</th><th>Status</th><th>Actions</th></tr></thead><tbody>{% for history_lead in enquiry_history %}<tr><td>{{ history_lead.created_date|date:"M d, Y" }}</td><td><span class="badge bg-{% if history_lead.enquiry_stage == 'won' %}success{% elif history_lead.enquiry_stage == 'lost' %}danger{% elif history_lead.enquiry_stage == 'enquiry_received' %}info{% else %}secondary{% endif %}">{{ history_lead.get_enquiry_stage_display }}</span></td><td>{% if history_lead.lead_status == 'fulfilled' %}<span class="badge bg-success">Fulfilled</span>{% else %}<span class="badge bg-warning text-dark">Not Fulfilled</span>{% endif %}</td><td><button type="button" class="btn btn-sm btn-outline-primary view-product-btn" data-lead-id="{{ history_lead.pk }}" onclick="showProductModal('{{ history_lead.pk }}')">View Product</button></td></tr>{% endfor %}</tbody></table></div>
+                {% else %}
+                <div class="text-center text-muted py-3"><i class="bi bi-archive" style="font-size: 2rem;"></i><p class="mt-2 mb-0">No previous enquiries for this contact.</p></div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header"><h6 class="mb-0">Recent Activities</h6></div>
+            <div class="card-body">
+                {% if activities %}
+                {% for activity in activities %}
+                <div class="d-flex align-items-start mb-3"><div class="avatar avatar-sm bg-primary rounded-circle me-3 flex-shrink-0"><i class="bi bi-{% if activity.activity_type == 'call' %}telephone{% elif activity.activity_type == 'email' %}envelope{% elif activity.activity_type == 'meeting' %}calendar{% else %}chat{% endif %} text-white"></i></div><div class="flex-grow-1"><h6 class="mb-1">{{ activity.subject }}</h6><p class="text-muted small mb-1">{{ activity.description|truncatechars:100 }}</p><small class="text-muted">{{ activity.user.first_name|default:activity.user.username }} - {{ activity.activity_date|date:"M d, H:i" }}</small></div></div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-3"><i class="bi bi-clock-history text-muted" style="font-size: 2 rem;"></i><p class="text-muted mt-2">No activities yet</p><a href="{% url 'crm_app:activity_add' %}" class="btn btn-sm btn-outline-primary">Log Activity</a></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals (followup, reason, invoice, delete, image, product) -->
+<div class="modal fade" id="followupModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Schedule Follow-up</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body">{% include 'crm_app/partials/followup_form.html' with form=followup_form lead=lead %}</div></div></div></div>
+<div class="modal fade" id="reasonModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Select Reason for Not Fulfilled</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="reasonForm"><div class="mb-3"><label for="reasonSelect" class="form-label">Reason</label><select class="form-select" id="reasonSelect" required><option value="">Select a reason...</option>{% for reason in reasons %}<option value="{{ reason.pk }}">{{ reason.name }}</option>{% endfor %}</select></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-primary" id="saveReason">Save</button></div></div></div></div>
+<div class="modal fade" id="invoiceNumberModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="invoiceModalTitle">Enter Number</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="invoiceForm"><div class="mb-3"><label for="invoiceInput" class="form-label" id="invoiceInputLabel">Number</label><input type="text" class="form-control" id="invoiceInput" required><div class="form-text" id="invoiceHelp"></div></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="invoiceCancel">Cancel</button><button type="button" class="btn btn-primary" id="invoiceSave">Save</button></div></div></div></div>
+<div class="modal fade" id="deleteModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Delete Enquiry</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i><strong>Warning!</strong> This action cannot be undone. The enquiry and all related data will be permanently deleted.</div><form id="deleteForm"><div class="mb-3"><label for="deleteReasonSelect" class="form-label">Reason for deletion <span class="text-danger">*</span></label><select class="form-select" id="deleteReasonSelect" required><option value="">Select a reason...</option><option value="duplicate">Duplicate Entry</option><option value="spam">Spam/Invalid Enquiry</option><option value="test">Test Entry</option><option value="wrong_info">Wrong Information</option><option value="customer_request">Customer Request</option><option value="other">Other</option></select></div><div class="mb-3" id="otherReasonDiv" style="display: none;"><label for="otherReasonText" class="form-label">Please specify</label><textarea class="form-control" id="otherReasonText" rows="2" placeholder="Please provide details..."></textarea></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-danger" id="confirmDelete"><i class="bi bi-trash"></i> Delete Enquiry</button></div></div></div></div>
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true"><div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="imageModalLabel">Enquiry Image</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body text-center"><img id="modalImage" src="" alt="Enquiry Image" class="img-fluid"></div></div></div></div>
+<div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header d-flex align-items-center justify-content-between">
+        <h5 class="modal-title mb-0" id="productModalLabel">Enquiry Products & Categories</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="productModalBody">
+        <div class="text-center">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Loading product details...</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WhatsApp Send Modal -->
+<div class="modal fade" id="whatsappSendModal" tabindex="-1" aria-labelledby="whatsappSendModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="whatsappSendModalLabel">
+          <i class="bi bi-whatsapp text-success"></i> Send File via WhatsApp
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="whatsappSendForm" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="whatsappNumber" class="form-label">WhatsApp Number</label>
+            <input type="tel" class="form-control" id="whatsappNumber" name="whatsapp_number" 
+                   value="{{ lead.phone_number }}" required>
+            <div class="form-text">Enter number with country code (e.g., +971501234567)</div>
+          </div>
+          <div class="mb-3">
+            <label for="fileUpload" class="form-label">Select File</label>
+            <input type="file" class="form-control" id="fileUpload" name="file" 
+                   accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png" required>
+            <div class="form-text">Supported: PDF, Word, Excel, PowerPoint, Images (Max 10MB)</div>
+          </div>
+          <div class="mb-3">
+            <label for="whatsappMessage" class="form-label">Message (Optional)</label>
+            <textarea class="form-control" id="whatsappMessage" name="message" rows="3" 
+                      placeholder="Add a message to send with the file..."></textarea>
+          </div>
+          <div id="uploadProgress" class="progress d-none mb-3" style="height: 25px;">
+            <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                 role="progressbar" style="width: 0%">0%</div>
+          </div>
+          <div id="uploadStatus" class="alert d-none" role="alert"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success" id="sendWhatsAppBtn">
+          <i class="bi bi-whatsapp"></i> Send to WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize product modal when DOM is ready
+        let productModal = null;
+        const productModalEl = document.getElementById('productModal');
+        if (productModalEl) {
+            productModal = new bootstrap.Modal(productModalEl);
+        } else {
+            console.error('Product modal element not found!');
+        }
+
+        // Function to handle product button clicks
+        function handleProductButtonClick(event) {
+            event.preventDefault();
+            
+            const button = event.target.closest('.view-product-btn');
+            if (!button) {
+                console.error('Button not found');
+                return;
+            }
+            
+            const leadId = button.getAttribute('data-lead-id');
+            console.log('Lead ID from button:', leadId);
+            
+            if (leadId) {
+                console.log('View Product button clicked for lead ID:', leadId);
+                showProductModal(leadId);
+            } else {
+                console.error('No lead ID found on button');
+            }
+        }
+
+        // Attach event listeners to view product buttons
+        function attachProductButtonListeners() {
+            const buttons = document.querySelectorAll('.view-product-btn');
+
+            buttons.forEach((button, index) => {
+                const leadId = button.getAttribute('data-lead-id');
+
+                // Remove any existing listeners to avoid duplicates
+                button.removeEventListener('click', handleProductButtonClick);
+                button.addEventListener('click', handleProductButtonClick);
+
+                // Add visual feedback
+                button.style.cursor = 'pointer';
+            });
+        }
+
+        // Attach listeners initially
+        attachProductButtonListeners();
+
+        // Re-attach listeners after any DOM changes (like AJAX updates)
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    attachProductButtonListeners();
+                }
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+        const phoneInput = document.querySelector("#id_phone_number");
+        if (phoneInput) {
+            const iti = window.intlTelInput(phoneInput, {
+                autoPlaceholder: "aggressive",
+                preferredCountries: ["ae","sa","qa","kw","bh","om","us","gb","in"],
+                utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
+                autoInsertDialCode: true,
+                formatOnDisplay: true,
+                nationalMode: false,
+                separateDialCode: true
+            });
+    
+            phoneInput.addEventListener('countrychange', function() {
+                const countryData = iti.getSelectedCountryData();
+                document.querySelector('#id_country').value = countryData.name;
+            });
+    
+            const countryData = iti.getSelectedCountryData();
+            document.querySelector('#id_country').value = countryData.name;
+    
+            phoneInput.addEventListener('blur', function() {
+                if (phoneInput.value.trim()) {
+                    if (iti.isValidNumber()) {
+                        phoneInput.classList.remove('is-invalid');
+                        phoneInput.classList.add('is-valid');
+                    } else {
+                        phoneInput.classList.remove('is-valid');
+                        phoneInput.classList.add('is-invalid');
+                    }
+                }
+            });
+        }
+    
+        // ---------- Invoice fields ----------
+        function toggleInvoiceFields() {
+            const stageSelect = document.querySelector('#id_enquiry_stage');
+            const invoiceFields = document.querySelector('#invoiceFields');
+            if (!stageSelect) return;
+            invoiceFields.style.display = 'none';
+            const selected = stageSelect.value;
+            if (['proforma_invoice_sent','invoice_made','invoice_sent'].includes(selected)) {
+                invoiceFields.style.display = 'flex';
+            }
+        }
+        toggleInvoiceFields();
+        const stageSelect = document.querySelector('#id_enquiry_stage');
+        if (stageSelect) {
+            stageSelect.addEventListener('change', toggleInvoiceFields);
+        }
+    
+        // ---------- Dynamic product entry ----------
+        let productIndex = 1; // start after the initial entry
+        const addBtn = document.getElementById('addProductBtn');
+        const container = document.getElementById('productContainer');
+
+        // Only enable dynamic product behaviour on pages that actually have the form elements
+        if (addBtn && container) {
+            addBtn.addEventListener('click', function() {
+                const entry = createProductEntry(productIndex);
+                container.appendChild(entry);
+                productIndex++;
+                updateRemoveButtons();
+                setupCategoryChangeListener(entry);
+            });
+
+            function createProductEntry(index) {
+                const div = document.createElement('div');
+                div.className = 'product-item border-bottom mb-2';
+                div.dataset.index = index;
+                div.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-product-btn">
+                            <i class="bi bi-trash"></i> Remove
+                        </button>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Category</label>
+                                <select name="categories[]" class="form-control category-select" data-index="${index}">
+                                    <option value="">Select Category</option>
+                                    {% for category in categories %}
+                                        <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Subcategory</label>
+                                <select name="subcategories[]" class="form-control subcategory-select" data-index="${index}">
+                                    <option value="">Select Subcategory</option>
+                                    {% for subcategory in subcategories %}
+                                        <option value="{{ subcategory.id }}" data-category="{{ subcategory.category.id }}">
+                                            {{ subcategory.category.name }} - {{ subcategory.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Product Description</label>
+                                <textarea name="product_descriptions[]" class="form-control" rows="2"
+                                          placeholder="Product description or requirements"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Product Image</label>
+                                <input type="file" name="product_images[]" class="form-control" accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return div;
+            }
+
+            function updateRemoveButtons() {
+                const entries = container.querySelectorAll('.product-item');
+                const btns = container.querySelectorAll('.remove-product-btn');
+                btns.forEach(b => b.style.display = entries.length > 1 ? 'inline-block' : 'none');
+            }
+
+            container.addEventListener('click', function(e) {
+                if (e.target.closest('.remove-product-btn')) {
+                    const entry = e.target.closest('.product-item');
+                    entry.remove();
+                    updateRemoveButtons();
+                }
+            });
+
+            function setupCategoryChangeListener(entry) {
+                const cat = entry.querySelector('.category-select');
+                const sub = entry.querySelector('.subcategory-select');
+                cat.addEventListener('change', function() {
+                    const id = this.value;
+                    sub.innerHTML = '<option value="">Select Subcategory</option>';
+                    if (id) {
+                        const matches = Array.from(sub.querySelectorAll('option'))
+                            .filter(opt => opt.dataset.category === id);
+                        matches.forEach(opt => sub.appendChild(opt));
+                    }
+                });
+            }
+
+            // initial entry listener
+            const firstEntry = container.querySelector('.product-item');
+            if (firstEntry) setupCategoryChangeListener(firstEntry);
+            updateRemoveButtons();
+        } else {
+            console.log('Product form elements not found on this page; skipping dynamic product JS.');
+        }
+    
+        // ---------- Status & Stage AJAX ----------
+        let currentLeadId = null;
+        let currentStatusSelect = null;
+        let currentStageSelect = null;
+        let pendingStageSelect = null;
+        let pendingStageValue = null;
+    
+        const invoiceModalEl = document.getElementById('invoiceNumberModal');
+        const invoiceModal = new bootstrap.Modal(invoiceModalEl);
+        const invoiceTitle = document.getElementById('invoiceModalTitle');
+        const invoiceLabel = document.getElementById('invoiceInputLabel');
+        const invoiceInput = document.getElementById('invoiceInput');
+        const invoiceHelp = document.getElementById('invoiceHelp');
+        const invoiceSave = document.getElementById('invoiceSave');
+    
+        // status change
+        document.querySelectorAll('.status-select').forEach(sel => {
+            sel.addEventListener('change', function() {
+                const leadId = this.dataset.leadId;
+                const newStatus = this.value;
+                if (newStatus === 'not_fulfilled') {
+                    currentLeadId = leadId;
+                    currentStatusSelect = this;
+                    new bootstrap.Modal(document.getElementById('reasonModal')).show();
+                } else {
+                    updateStatus(leadId, newStatus, null, this);
+                }
+            });
+        });
+    
+        // stage change
+        document.querySelectorAll('.stage-select').forEach(sel => {
+            sel.addEventListener('change', function() {
+                const leadId = this.dataset.leadId;
+                const newStage = this.value;
+                if (['proforma_invoice_sent','invoice_made','invoice_sent'].includes(newStage)) {
+                    pendingStageSelect = this;
+                    pendingStageValue = newStage;
+                    // configure modal text
+                    if (newStage === 'proforma_invoice_sent') {
+                        invoiceTitle.textContent = 'Proforma Invoice Number';
+                        invoiceLabel.textContent = 'Enter Proforma Invoice Number';
+                        invoiceHelp.textContent = 'A number is required for this stage.';
+                    } else {
+                        invoiceTitle.textContent = 'Invoice Number';
+                        invoiceLabel.textContent = 'Enter Invoice Number';
+                        invoiceHelp.textContent = 'A number is required for this stage.';
+                    }
+                    invoiceInput.value = '';
+                    invoiceModal.show();
+                } else {
+                    updateEnquiryStage(leadId, newStage, this);
+                }
+            });
+        });
+    
+        invoiceSave.addEventListener('click', function() {
+            const num = invoiceInput.value.trim();
+            if (!num) {
+                invoiceInput.classList.add('is-invalid');
+                return;
+            }
+            invoiceInput.classList.remove('is-invalid');
+            invoiceModal.hide();
+            if (pendingStageSelect && pendingStageValue) {
+                const leadId = pendingStageSelect.dataset.leadId;
+                updateEnquiryStage(leadId, pendingStageValue, pendingStageSelect, num);
+                pendingStageSelect = null;
+                pendingStageValue = null;
+            }
+        });
+    
+        // ---------- Reason modal ----------
+        document.getElementById('saveReason').addEventListener('click', function() {
+            const reasonId = document.getElementById('reasonSelect').value;
+            if (!reasonId) {
+                alert('Please select a reason');
+                return;
+            }
+            updateStatus(currentLeadId, 'not_fulfilled', reasonId, currentStatusSelect);
+            bootstrap.Modal.getInstance(document.getElementById('reasonModal')).hide();
+        });
+    
+        // ---------- Delete modal ----------
+        document.getElementById('confirmDelete').addEventListener('click', function() {
+            const reason = document.getElementById('deleteReasonSelect').value;
+            const other = document.getElementById('otherReasonText')?.value || '';
+            if (!reason) {
+                alert('Select a reason');
+                return;
+            }
+            if (reason === 'other' && !other.trim()) {
+                alert('Specify the reason');
+                return;
+            }
+            deleteEnquiry('{{ lead.pk }}', reason, other);
+        });
+    
+        // ---------- Helper AJAX functions ----------
+        function updateStatus(leadId, status, reasonId, selectEl) {
+            const fd = new FormData();
+            fd.append('status', status);
+            if (reasonId) fd.append('reason', reasonId);
+            fd.append('csrfmiddlewaretoken', document.querySelector('input[name=csrfmiddlewaretoken]').value);
+            fetch(`/enquiries/${leadId}/update-status/`, {method:'POST', body:fd})
+                .then(r=>r.json())
+                .then(d=>{
+                    if (d.success) {
+                        selectEl.dataset.currentStatus = status;
+                        selectEl.style.backgroundColor = '#d4edda';
+                        setTimeout(()=>{selectEl.style.backgroundColor=''; location.reload();},1000);
+                    } else {
+                        alert(d.error||'Error');
+                        selectEl.value = selectEl.dataset.currentStatus;
+                    }
+                })
+                .catch(e=>{alert(e); selectEl.value = selectEl.dataset.currentStatus;});
+        }
+    
+        function updateEnquiryStage(leadId, stage, selectEl, number=null) {
+            const fd = new FormData();
+            fd.append('enquiry_stage', stage);
+            if (stage === 'proforma_invoice_sent' && number) fd.append('proforma_invoice_number', number);
+            if ((stage === 'invoice_made' || stage === 'invoice_sent') && number) fd.append('invoice_number', number);
+            fd.append('csrfmiddlewaretoken', document.querySelector('input[name=csrfmiddlewaretoken]').value);
+            fetch(`/enquiries/${leadId}/update-stage/`, {method:'POST', body:fd})
+                .then(r=>r.json())
+                .then(d=>{
+                    if (d.success) {
+                        selectEl.dataset.currentStage = stage;
+                        selectEl.style.backgroundColor = '#d4edda';
+                        setTimeout(()=>{selectEl.style.backgroundColor=''; location.reload();},800);
+                    } else {
+                        alert(d.error||'Error');
+                        selectEl.value = selectEl.dataset.currentStage;
+                    }
+                })
+                .catch(e=>{alert(e); selectEl.value = selectEl.dataset.currentStage;});
+        }
+    
+        function deleteEnquiry(leadId, reason, other) {
+            const fd = new FormData();
+            fd.append('reason', reason);
+            if (other) fd.append('other_reason', other);
+            fd.append('csrfmiddlewaretoken', document.querySelector('input[name=csrfmiddlewaretoken]').value);
+            fetch(`/enquiries/${leadId}/delete/`, {method:'POST', body:fd})
+                .then(r=>r.json())
+                .then(d=>{
+                    if (d.success) {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                        if (modal) modal.hide();
+                        window.location.href = '/enquiries/';
+                    } else {
+                        alert(d.error||'Error');
+                    }
+                })
+                .catch(e=>alert(e));
+        }
+        
+        // ---------- WhatsApp File Send ----------
+        const sendWhatsAppBtn = document.getElementById('sendWhatsAppBtn');
+        console.log('WhatsApp send button element:', sendWhatsAppBtn);
+        
+        if (sendWhatsAppBtn) {
+            sendWhatsAppBtn.addEventListener('click', function() {
+                console.log('WhatsApp Send button clicked!');
+                
+                const form = document.getElementById('whatsappSendForm');
+                const fileInput = document.getElementById('fileUpload');
+                const whatsappNumber = document.getElementById('whatsappNumber').value.trim();
+                const message = document.getElementById('whatsappMessage').value.trim();
+                const uploadProgress = document.getElementById('uploadProgress');
+                const uploadProgressBar = document.getElementById('uploadProgressBar');
+                const uploadStatus = document.getElementById('uploadStatus');
+                
+                console.log('Form elements:', { form, fileInput, whatsappNumber, message });
+                
+                // Validation
+                if (!whatsappNumber) {
+                    alert('Please enter a WhatsApp number');
+                    return;
+                }
+                
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    alert('Please select a file to send');
+                    return;
+                }
+                
+                const file = fileInput.files[0];
+                
+                // Check file size (10MB limit)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('File size must be less than 10MB');
+                    return;
+                }
+                
+                // Disable send button
+                sendWhatsAppBtn.disabled = true;
+                sendWhatsAppBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
+                
+                // Show progress bar
+                uploadProgress.classList.remove('d-none');
+                uploadStatus.classList.add('d-none');
+                
+                // Prepare form data
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('whatsapp_number', whatsappNumber);
+                formData.append('message', message);
+                formData.append('lead_id', '{{ lead.pk }}');
+                const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]')?.value;
+                if (csrfToken) {
+                    formData.append('csrfmiddlewaretoken', csrfToken);
+                }
+                
+                console.log('Uploading to: /enquiries/upload-whatsapp-file/');
+                console.log('FormData contents:', {
+                    file: file.name,
+                    whatsapp_number: whatsappNumber,
+                    message: message,
+                    lead_id: '{{ lead.pk }}',
+                    has_csrf: !!csrfToken
+                });
+                
+                // Upload file
+                fetch('/enquiries/upload-whatsapp-file/', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    console.log('Upload response status:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Upload response data:', data);
+                    if (data.success) {
+                        uploadProgressBar.style.width = '100%';
+                        uploadProgressBar.textContent = '100%';
+                        
+                        uploadStatus.className = 'alert alert-success';
+                        uploadStatus.textContent = 'File uploaded successfully! Opening WhatsApp...';
+                        uploadStatus.classList.remove('d-none');
+                        
+                        // Prepare WhatsApp message
+                        let whatsappText = '';
+                        if (message) {
+                            whatsappText = encodeURIComponent(message + '\n\n');
+                        }
+                        // Show file name, then put the raw URL on its own line so WhatsApp
+                        // auto-detects it as a clickable link
+                        whatsappText += encodeURIComponent('📎 File: ' + file.name + '\n');
+                        whatsappText += encodeURIComponent(data.file_url);
+                        
+                        // Clean phone number (remove spaces, dashes, etc.)
+                        let cleanNumber = whatsappNumber.replace(/[^0-9+]/g, '');
+                        if (cleanNumber.startsWith('+')) {
+                            cleanNumber = cleanNumber.substring(1);
+                        }
+                        
+                        // Open WhatsApp Web with pre-filled message
+                        const whatsappUrl = `https://web.whatsapp.com/send?phone=${cleanNumber}&text=${whatsappText}`;
+                        
+                        setTimeout(() => {
+                            window.open(whatsappUrl, '_blank');
+                            
+                            // Show success message
+                            uploadStatus.className = 'alert alert-info';
+                            uploadStatus.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>WhatsApp opened! Please verify and send the message from WhatsApp.';
+                            
+                            // Reset form after 3 seconds
+                            setTimeout(() => {
+                                form.reset();
+                                uploadProgress.classList.add('d-none');
+                                uploadProgressBar.style.width = '0%';
+                                uploadProgressBar.textContent = '0%';
+                                sendWhatsAppBtn.disabled = false;
+                                sendWhatsAppBtn.innerHTML = '<i class="bi bi-whatsapp"></i> Send to WhatsApp';
+                                
+                                // Close modal after 5 seconds
+                                setTimeout(() => {
+                                    const modal = bootstrap.Modal.getInstance(document.getElementById('whatsappSendModal'));
+                                    if (modal) modal.hide();
+                                    uploadStatus.classList.add('d-none');
+                                }, 2000);
+                            }, 3000);
+                        }, 1000);
+                    } else {
+                        throw new Error(data.error || 'Upload failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Upload error:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack,
+                        name: error.name
+                    });
+                    
+                    uploadStatus.className = 'alert alert-danger';
+                    uploadStatus.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Error: ' + error.message;
+                    uploadStatus.classList.remove('d-none');
+                    uploadProgress.classList.add('d-none');
+                    
+                    sendWhatsAppBtn.disabled = false;
+                    sendWhatsAppBtn.innerHTML = '<i class="bi bi-whatsapp"></i> Send to WhatsApp';
+                });
+            });
+        } else {
+            console.error('WhatsApp send button not found in DOM!');
+            // Try again after a short delay in case of timing issues
+            setTimeout(() => {
+                const retryBtn = document.getElementById('sendWhatsAppBtn');
+                console.log('Retry check - WhatsApp send button:', retryBtn);
+            }, 1000);
+        }
+    
+    });
+    
+    console.log('Lead detail page JavaScript loaded');
+</script>
+
+<script>
+// Image modal function
+function openImageModal(imageUrl) {
+    console.log('openImageModal called with URL:', imageUrl);
+    const modalImage = document.getElementById('modalImage');
+    if (modalImage) {
+        modalImage.src = imageUrl;
+        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+        modal.show();
+    } else {
+        console.error('Modal image element not found');
+    }
+}
+</script>
+{% endblock %}
