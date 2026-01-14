@@ -261,6 +261,8 @@ if USE_S3:
     else:
         # For Supabase Storage, use custom storage class to handle 403 HeadObject
         DEFAULT_FILE_STORAGE = 'crm_project.storage_backends.SupabaseS3Storage'
+        AWS_QUERYSTRING_AUTH = env_bool('AWS_QUERYSTRING_AUTH', 'False')
+        AWS_QUERYSTRING_EXPIRE = int(os.getenv('AWS_QUERYSTRING_EXPIRE', '3600'))
         _public_base = os.getenv(
             'AWS_S3_PUBLIC_BASE',
             f"https://kvdtygryolbyjvtqphzj.storage.supabase.co/storage/v1/object/public/{AWS_STORAGE_BUCKET_NAME}"
@@ -269,7 +271,9 @@ if USE_S3:
         # For Supabase, we need the full public URL (with path) for URL generation
         # but just the domain for boto3 uploads
         custom_domain_from_env = os.getenv('AWS_S3_CUSTOM_DOMAIN')
-        if custom_domain_from_env:
+        if AWS_QUERYSTRING_AUTH:
+            AWS_S3_CUSTOM_DOMAIN = None
+        elif custom_domain_from_env:
             # Keep the full URL for custom domain (includes path for serving)
             if custom_domain_from_env.startswith('http'):
                 AWS_S3_CUSTOM_DOMAIN = custom_domain_from_env.replace('https://', '').replace('http://', '')
@@ -283,13 +287,16 @@ if USE_S3:
         AWS_S3_URL_PROTOCOL = 'https:'
 
         # Ensure the MEDIA_URL matches the public base without corrupting the scheme
-        MEDIA_URL = _public_base.rstrip('/') + '/'
+        if AWS_QUERYSTRING_AUTH:
+            MEDIA_URL = '/media/'
+        else:
+            MEDIA_URL = _public_base.rstrip('/') + '/'
 
         # Sensible defaults
         AWS_S3_OBJECT_PARAMETERS = {
             'CacheControl': 'max-age=31536000, public',
         }
-        AWS_QUERYSTRING_AUTH = False
+        # NOTE: AWS_QUERYSTRING_AUTH is configured above from env.
         # Avoid legacy ACL warnings; bucket-level policy should grant public read
         AWS_DEFAULT_ACL = None
         # Avoid overwriting files with same name
