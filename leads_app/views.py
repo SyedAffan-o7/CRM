@@ -2345,55 +2345,82 @@ def lead_bulk_import(request):
     print(f"CSRF token in request: {'csrfmiddlewaretoken' in request.POST}")
     
     if request.method == 'POST':
-        sheet_url = request.POST.get('sheet_url', '').strip()
-        print(f"Sheet URL received: {sheet_url}")
-        
-        if not sheet_url:
-            messages.error(request, 'Please provide a Google Sheet URL.')
-            return redirect('crm_app:lead_list')
-
-        # Extract spreadsheet ID (and optional gid) from URL
-        import re
-        # More flexible regex to handle various Google Sheets URL formats
-        id_match = re.search(r'/spreadsheets/d/([a-zA-Z0-9-_]+)', sheet_url)
-        if not id_match:
-            # Try alternative pattern for shared links
-            id_match = re.search(r'/d/([a-zA-Z0-9-_]+)', sheet_url)
-        
-        print(f"URL parsing - sheet_url: {sheet_url}")
-        print(f"ID match: {id_match}")
-        if not id_match:
-            print(f"No spreadsheet ID found in URL: {sheet_url}")
-            messages.error(request, 'Invalid Google Sheet URL format. Please use a URL like: https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit')
-            return redirect('crm_app:lead_list')
-
-        spreadsheet_id = id_match.group(1)
-        print(f"Extracted spreadsheet ID: {spreadsheet_id}")
-        gid_match = re.search(r'[?#&]gid=(\d+)', sheet_url)
-        gid_part = f"&gid={gid_match.group(1)}" if gid_match else ''
-        print(f"GID part: {gid_part}")
-        csv_url = f'https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv{gid_part}'
-        print(f"CSV URL generated: {csv_url}")
-
         try:
-            # Fetch CSV data
-            print("Fetching CSV data...")
-            response = requests.get(csv_url, timeout=30)
-            print(f"Response status: {response.status_code}")
-            print(f"Response headers: {dict(response.headers)}")
-            
-            if response.status_code == 403:
-                messages.error(request, 'Access denied to Google Sheet. Please make sure the sheet is publicly accessible by setting sharing to "Anyone with the link can view".')
-                return redirect('crm_app:lead_list')
-            elif response.status_code == 404:
-                messages.error(request, 'Google Sheet not found. Please check the URL and make sure it exists.')
-                return redirect('crm_app:lead_list')
-            
-            response.raise_for_status()
+            import re
 
-            # Parse CSV with pandas (treat all as strings, avoid NaN)
-            print("Parsing CSV with pandas...")
-            df = pd.read_csv(io.StringIO(response.text), dtype=str, keep_default_na=False)
+            sheet_url = request.POST.get('sheet_url', '').strip()
+            csv_file = request.FILES.get('csv_file')
+            print(f"Sheet URL received: {sheet_url}")
+            print(f"CSV file received: {csv_file.name if csv_file else None}")
+
+            if not sheet_url and not csv_file:
+                messages.error(request, 'Please provide a Google Sheet URL or upload a CSV file.')
+                return redirect('crm_app:lead_list')
+
+            source_label = 'Google Sheets'
+            limit_to_last_20 = True
+
+            if csv_file:
+                source_label = 'CSV file'
+                limit_to_last_20 = False
+
+                file_name = (csv_file.name or '').lower()
+                if not file_name.endswith('.csv'):
+                    messages.error(request, 'Please upload a valid CSV file (.csv).')
+                    return redirect('crm_app:lead_list')
+
+                try:
+                    file_bytes = csv_file.read()
+                    try:
+                        file_text = file_bytes.decode('utf-8-sig')
+                    except UnicodeDecodeError:
+                        file_text = file_bytes.decode('latin-1')
+                except Exception as e:
+                    messages.error(request, f'Error reading uploaded CSV file: {str(e)}')
+                    return redirect('crm_app:lead_list')
+
+                print("Parsing uploaded CSV with pandas...")
+                df = pd.read_csv(io.StringIO(file_text), dtype=str, keep_default_na=False)
+            else:
+                # Extract spreadsheet ID (and optional gid) from URL
+                id_match = re.search(r'/spreadsheets/d/([a-zA-Z0-9-_]+)', sheet_url)
+                if not id_match:
+                    id_match = re.search(r'/d/([a-zA-Z0-9-_]+)', sheet_url)
+
+                print(f"URL parsing - sheet_url: {sheet_url}")
+                print(f"ID match: {id_match}")
+                if not id_match:
+                    print(f"No spreadsheet ID found in URL: {sheet_url}")
+                    messages.error(request, 'Invalid Google Sheet URL format. Please use a URL like: https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit')
+                    return redirect('crm_app:lead_list')
+
+                spreadsheet_id = id_match.group(1)
+                print(f"Extracted spreadsheet ID: {spreadsheet_id}")
+                gid_match = re.search(r'[?#&]gid=(\d+)', sheet_url)
+                gid_part = f"&gid={gid_match.group(1)}" if gid_match else ''
+                print(f"GID part: {gid_part}")
+                csv_url = f'https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv{gid_part}'
+                print(f"CSV URL generated: {csv_url}")
+
+                # Fetch CSV data
+                print("Fetching CSV data...")
+                response = requests.get(csv_url, timeout=30)
+                print(f"Response status: {response.status_code}")
+                print(f"Response headers: {dict(response.headers)}")
+
+                if response.status_code == 403:
+                    messages.error(request, 'Access denied to Google Sheet. Please make sure the sheet is publicly accessible by setting sharing to "Anyone with the link can view".')
+                    return redirect('crm_app:lead_list')
+                elif response.status_code == 404:
+                    messages.error(request, 'Google Sheet not found. Please check the URL and make sure it exists.')
+                    return redirect('crm_app:lead_list')
+
+                response.raise_for_status()
+
+                # Parse CSV with pandas (treat all as strings, avoid NaN)
+                print("Parsing CSV with pandas...")
+                df = pd.read_csv(io.StringIO(response.text), dtype=str, keep_default_na=False)
+
             print(f"DataFrame shape: {df.shape}")
             print(f"Raw DataFrame columns: {list(df.columns)}")
 
@@ -2489,7 +2516,9 @@ def lead_bulk_import(request):
             print("Filtering for valid rows...")
             # Consider non-empty Image URL rows only, keep last 20
             df['Image URL'] = df['Image URL'].astype(str).map(lambda x: x.strip())
-            valid_rows = df[df['Image URL'] != ''].tail(20)
+            valid_rows = df[df['Image URL'] != '']
+            if limit_to_last_20:
+                valid_rows = valid_rows.tail(20)
             print(f"Valid rows count: {len(valid_rows)}")
             print(f"Valid rows data:\n{valid_rows}")
 
@@ -2624,7 +2653,7 @@ def lead_bulk_import(request):
 
             # Show results
             if imported_count > 0:
-                messages.success(request, f'Successfully imported {imported_count} enquiries from Google Sheets.')
+                messages.success(request, f'Successfully imported {imported_count} enquiries from {source_label}.')
             if skipped_count > 0:
                 # Surface first few skip reasons to the UI for faster debugging
                 if errors:

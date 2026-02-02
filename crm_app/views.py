@@ -19,6 +19,12 @@ from products.models import Category, Subcategory
 from .forms import LeadForm, ContactForm, AccountForm, DealForm, ActivityLogForm
 
 
+@login_required
+def chat_page(request):
+    """Simple chat placeholder page."""
+    return render(request, 'crm_app/chat.html')
+
+
 def _is_super_admin(user):
     if not getattr(user, 'is_authenticated', False):
         return False

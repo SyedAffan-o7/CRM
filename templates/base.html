@@ -114,6 +114,11 @@
                     
                     <ul class="nav flex-column d-flex flex-grow-1">
                         <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'chat' %}active{% endif %}" href="{% url 'crm_app:chat' %}">
+                                <i class="bi bi-chat-dots"></i> Chat
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'crm_app:dashboard' %}">
                                 <i class="bi bi-speedometer2"></i> Dashboard
                             </a>

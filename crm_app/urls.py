@@ -8,6 +8,9 @@ from leads_app import views as lead_views
 app_name = 'crm_app'
 
 urlpatterns = [
+    # Chat
+    path('chat/', views.chat_page, name='chat'),
+
     # Dashboard
     path('', views.dashboard, name='dashboard'),
 
